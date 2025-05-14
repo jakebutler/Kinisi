@@ -16,17 +16,23 @@ export async function upsertSurveyResponse(userId: string, response: any) {
     .from('survey_responses')
     .upsert([
       { user_id: userId, response }
-    ], { onConflict: ['user_id'] })
+    ], { onConflict: ['id'] })
     .select();
   return { data, error };
 }
 
 // Get latest survey response for a user
 export async function getSurveyResponse(userId: string) {
-  const { data, error } = await supabase
-    .from('survey_responses')
-    .select('*')
-    .eq('user_id', userId)
-    .single();
-  return { data, error };
+  try {
+    const { data, error } = await supabase
+      .from('survey_responses')
+      .select('*')
+      .eq('user_id', userId)
+      .order('updated_at', { ascending: false });
+    
+    return { data, error };
+  } catch (err) {
+    console.error('Error fetching survey response:', err);
+    return { data: null, error: new Error('Failed to fetch survey response. Please try again.') };
+  }
 }

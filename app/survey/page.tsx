@@ -51,28 +51,18 @@ const SurveyPage = () => {
       }
       setUserId(user.id);
       const { data } = await getSurveyResponse(user.id);
-      if (data && data.response) {
-        setFormData(data.response);
+      if (data && data.length > 0 && data[0].response) {
+        setFormData(data[0].response);
       }
       setLoading(false);
     };
     fetchUserAndData();
   }, [router]);
 
-  // Auto-save handler (debounced)
-  const autoSave = useCallback(debounce(async (newData: any) => {
-    if (!userId) return;
-    setSaveStatus('saving');
-    const { error } = await upsertSurveyResponse(userId, newData);
-    setSaveStatus(error ? 'error' : 'saved');
-  }, 1000), [userId]);
-
-  // Handle form changes and auto-save after each question
+  // Handle form changes
   const handleChange = (field: string, value: any) => {
     const newData = { ...formData, [field]: value };
     setFormData(newData);
-    autoSave(newData);
-    
     // Check if we need to show follow-up questions when specific fields change
     if (field === 'activityPreferences') {
       setShowOtherActivityPreferences(Array.isArray(value) && value.includes('Other'));
@@ -81,13 +71,106 @@ const SurveyPage = () => {
     }
   };
 
-  // Stepper navigation
+  // Validation for a single question
+  const validateQuestion = (key: string, value: any, schema: any): string | null => {
+    // Required check
+    if (intakeSurveySchema.required.includes(key)) {
+      if (value === undefined || value === null || value === "") {
+        return "This field is required.";
+      }
+      if (schema.type === 'array' && Array.isArray(value) && value.length === 0) {
+        return "This field is required.";
+      }
+      if (schema.type === 'object' && key === 'currentPain' && value.hasPain === undefined) {
+        return "This field is required.";
+      }
+    }
+    // Enum check
+    if (schema.enum && value && !schema.enum.includes(value)) {
+      return "Invalid selection.";
+    }
+    // Type check (basic)
+    if (schema.type === 'integer' && value !== undefined && value !== null && value !== "") {
+      if (isNaN(Number(value))) {
+        return "Must be a number.";
+      }
+      // Special integer check for importance and confidence
+      if ((key === 'importance' || key === 'confidence')) {
+        const num = Number(value);
+        if (!Number.isInteger(num) || num < 0 || num > 10) {
+          return "Please enter an integer from 0 to 10.";
+        }
+      }
+    }
+    return null;
+  };
+
+  // Track validation errors
+  const [validationError, setValidationError] = useState<string | null>(null);
+
+  // Stepper navigation with validation
   const goNext = () => {
+    const key = orderedQuestionKeys[currentStep];
+    const schema = intakeSurveySchema.properties[key];
+    const error = validateQuestion(key, formData[key], schema);
+    if (error) {
+      setValidationError(error);
+      return;
+    }
+    setValidationError(null);
     if (currentStep < totalQuestions - 1) setCurrentStep(currentStep + 1);
   };
   const goPrev = () => {
+    setValidationError(null);
     if (currentStep > 0) setCurrentStep(currentStep - 1);
   };
+
+  // Validate all required fields on submit
+  const validateAll = () => {
+    for (const key of intakeSurveySchema.required) {
+      const schema = intakeSurveySchema.properties[key];
+      const error = validateQuestion(key, formData[key], schema);
+      if (error) {
+        return { key, error };
+      }
+    }
+    return null;
+  };
+
+  // Submission state
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [submitSuccess, setSubmitSuccess] = useState<boolean>(false);
+
+  // Handle final submission
+  const handleSubmit = async () => {
+    setSubmitError(null);
+    setSubmitSuccess(false);
+    const validation = validateAll();
+    if (validation) {
+      setValidationError(`Please complete all required fields. (${validation.key}: ${validation.error})`);
+      return;
+    }
+    setValidationError(null);
+    if (!userId) {
+      setSubmitError('User not authenticated.');
+      return;
+    }
+    // Clean data
+    const cleanData = Object.fromEntries(Object.entries(formData).filter(([_, v]) => v !== undefined && v !== null && v !== ""));
+    try {
+      const { error } = await upsertSurveyResponse(userId, cleanData);
+      if (error) {
+        setSubmitError('Failed to save survey. Please try again.');
+        return;
+      }
+      setSubmitSuccess(true);
+      // Redirect to results after a short delay
+      setTimeout(() => router.push('/survey/results'), 1000);
+    } catch (err) {
+      setSubmitError('An unexpected error occurred.');
+    }
+  };
+
 
   // Custom label mapping
   const customLabels: Record<string, string> = {
@@ -132,7 +215,7 @@ const SurveyPage = () => {
 
     // --- Pain Question Special Handling ---
     if (key === currentPainKey) {
-      const hasPain = formData[currentPainKey]?.hasPain ?? false;
+      const hasPain = formData[currentPainKey]?.hasPain;
       // Show main pain question as Yes/No radio
       return (
         <div key={key} className="mb-4">
@@ -166,10 +249,55 @@ const SurveyPage = () => {
                 value={formData[currentPainKey]?.description || ''}
                 onChange={e => handleChange(currentPainKey, { hasPain: true, description: e.target.value })}
                 className="border rounded px-2 py-1 w-full mt-1"
-                placeholder="Describe the pain"
               />
             </div>
           )}
+        </div>
+      );
+    }
+
+    // Radio buttons for Yes/No questions
+    if (["medicalClearance", "tobaccoUse"].includes(key) && schema.enum && schema.enum.length === 2) {
+      return (
+        <div key={key} className="mb-4">
+          <label className="font-semibold">{schema.title}</label>
+          <div className="flex gap-4 mt-2">
+            {schema.enum.map((option: string) => (
+              <label key={option} className="mr-4">
+                <input
+                  type="radio"
+                  name={key}
+                  value={option}
+                  checked={formData[key] === option}
+                  required={intakeSurveySchema.required.includes(key)}
+                  onChange={e => handleChange(key, e.target.value)}
+                />{' '}{option}
+              </label>
+            ))}
+          </div>
+        </div>
+      );
+    }
+
+    // Radio buttons for intentToChange (Yes/No/Not sure)
+    if (key === "intentToChange" && schema.enum) {
+      return (
+        <div key={key} className="mb-4">
+          <label className="font-semibold">{schema.title}</label>
+          <div className="flex gap-4 mt-2">
+            {schema.enum.map((option: string) => (
+              <label key={option} className="mr-4">
+                <input
+                  type="radio"
+                  name={key}
+                  value={option}
+                  checked={formData[key] === option}
+                  required={intakeSurveySchema.required.includes(key)}
+                  onChange={e => handleChange(key, e.target.value)}
+                />{' '}{option}
+              </label>
+            ))}
+          </div>
         </div>
       );
     }
@@ -197,22 +325,44 @@ const SurveyPage = () => {
 
     // Number input (with custom label if present)
     if (schema.type === 'integer') {
+      // Only apply special logic for importance and confidence
+      const isScaleQuestion = key === 'importance' || key === 'confidence';
       return (
         <div key={key} className="mb-4">
           <label className="font-semibold">{customLabels[key] || schema.title}</label>
           <input
             type="number"
             name={key}
-            min={schema.minimum}
-            max={schema.maximum}
+            min={isScaleQuestion ? 0 : schema.minimum}
+            max={isScaleQuestion ? 10 : schema.maximum}
+            step={1}
             value={formData[key] ?? ''}
             required={intakeSurveySchema.required.includes(key)}
-            className="border rounded px-2 py-1 w-24 ml-2"
-            onChange={e => handleChange(key, Number(e.target.value))}
+            className="border rounded px-2 py-1 w-full"
+            onChange={e => {
+              // Always store as number or empty string
+              const val = e.target.value === '' ? '' : Number(e.target.value);
+              handleChange(key, val);
+            }}
+            onBlur={e => {
+              // If it's a scale question, validate integer
+              if (isScaleQuestion && e.target.value !== '') {
+                const num = Number(e.target.value);
+                if (!Number.isInteger(num) || num < 0 || num > 10) {
+                  setValidationError('Please enter an integer from 0 to 10.');
+                } else {
+                  setValidationError(null);
+                }
+              }
+            }}
           />
+          {/* Show validation error for scale questions only */}
+          {isScaleQuestion && validationError && (
+            <div className="text-red-600 text-sm mt-1">{validationError}</div>
+          )}
         </div>
       );
-    }
+    }  
 
     // Multi-select checkboxes
     if (schema.type === 'array' && schema.items && schema.items.enum) {
@@ -308,6 +458,18 @@ const SurveyPage = () => {
     <div className="container mx-auto p-4 max-w-2xl">
       <h1 className="text-2xl font-bold mb-6">Intake Survey</h1>
       
+      {/* Validation error */}
+      {validationError && (
+        <div className="mb-4 text-red-600 font-semibold">{validationError}</div>
+      )}
+      {/* Submission error/success */}
+      {submitError && (
+        <div className="mb-4 text-red-600 font-semibold">{submitError}</div>
+      )}
+      {submitSuccess && (
+        <div className="mb-4 text-green-700 font-semibold">Survey saved! Redirecting...</div>
+      )}
+
       {/* Progress indicator */}
       <div className="mb-6">
         <div className="flex justify-between mb-2">
@@ -334,12 +496,21 @@ const SurveyPage = () => {
         >
           Previous
         </button>
-        <button 
-          onClick={goNext} 
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          {currentStep === totalQuestions - 1 ? 'Finish' : 'Next'}
-        </button>
+        {currentStep === totalQuestions - 1 ? (
+          <button 
+            onClick={handleSubmit}
+            className="px-4 py-2 bg-blue-600 text-white rounded"
+          >
+            Finish
+          </button>
+        ) : (
+          <button 
+            onClick={goNext}
+            className="px-4 py-2 bg-blue-600 text-white rounded"
+          >
+            Next
+          </button>
+        )}
       </div>
     </div>
   );
