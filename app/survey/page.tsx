@@ -5,43 +5,259 @@ import { supabase } from '../../utils/supabaseClient';
 import intakeSurveySchema from './intake-survey-questions.json';
 import { useRouter } from 'next/navigation';
 
-// Helper: debounce
-function debounce<T extends (...args: any[]) => void>(fn: T, delay: number) {
-  let timeout: NodeJS.Timeout;
-  return (...args: Parameters<T>) => {
-    clearTimeout(timeout);
-    timeout = setTimeout(() => fn(...args), delay);
-  };
-}
+type Question = {
+  key: string;
+  title: string;
+  type: 'radio' | 'select' | 'number' | 'text' | 'multiselect' | 'group';
+  options?: { label: string; value: string }[];
+  required?: boolean;
+  min?: number;
+  max?: number;
+  showFollowUp?: (value: any) => boolean;
+  followUp?: Omit<Question, 'isFollowUp'>;
+  isFollowUp?: boolean;
+  fields?: Question[];
+};
+
+const questions: Question[] = [
+  {
+    key: 'medicalClearance',
+    title: 'Have you ever been told by a doctor that you should not exercise because of a medical condition?',
+    type: 'radio',
+    options: [
+      { label: 'Yes', value: 'Yes' },
+      { label: 'No', value: 'No' },
+    ],
+    required: true
+  },
+  {
+    key: 'currentPain',
+    title: 'Do you currently experience pain or injury that limits your physical activity?',
+    type: 'radio',
+    options: [
+      { label: 'Yes', value: 'Yes' },
+      { label: 'No', value: 'No' },
+    ],
+    required: true,
+    showFollowUp: (value: any) => value === 'Yes',
+    followUp: {
+      key: 'painDescription',
+      title: 'Please describe your pain or injury:',
+      type: 'text',
+      required: true
+    }
+  },
+  {
+    key: 'painDescription',
+    title: 'Please describe your pain or injury:',
+    type: 'text',
+    required: false,
+    isFollowUp: true
+  },
+  {
+    key: 'activityFrequency',
+    title: 'On average, how many days per week do you do 30+ minutes of moderate-to-vigorous physical activity?',
+    type: 'select',
+    options: [
+      { label: '0', value: '0' },
+      { label: '1-2', value: '1-2' },
+      { label: '3-4', value: '3-4' },
+      { label: '5-7', value: '5-7' },
+    ],
+    required: true
+  },
+  {
+    key: 'physicalFunction',
+    title: 'How would you rate your overall physical function?',
+    type: 'select',
+    options: [
+      { label: 'Excellent', value: 'Excellent' },
+      { label: 'Good', value: 'Good' },
+      { label: 'Fair', value: 'Fair' },
+      { label: 'Poor', value: 'Poor' },
+    ],
+    required: true
+  },
+  {
+    key: 'intentToChange',
+    title: 'Do you intend to increase your physical activity in the next 30 days?',
+    type: 'radio',
+    options: [
+      { label: 'Yes', value: 'Yes' },
+      { label: 'No', value: 'No' },
+      { label: 'Not sure', value: 'Not sure' },
+    ],
+    required: true
+  },
+  {
+    key: 'importance',
+    title: 'On a scale of 0–10, how important is it for you to become more physically active?',
+    type: 'number',
+    required: true
+  },
+  {
+    key: 'confidence',
+    title: 'On a scale of 0–10, how confident are you in your ability to follow an exercise plan?',
+    type: 'number',
+    required: true
+  },
+  {
+    key: 'sleep',
+    title: 'How many hours of sleep do you usually get per night?',
+    type: 'select',
+    options: [
+      { label: 'Less than 5', value: 'Less than 5' },
+      { label: '5-6', value: '5-6' },
+      { label: '7-8', value: '7-8' },
+      { label: 'More than 8', value: 'More than 8' },
+    ],
+    required: true
+  },
+  {
+    key: 'tobaccoUse',
+    title: 'Do you currently smoke or use tobacco?',
+    type: 'radio',
+    options: [
+      { label: 'Yes', value: 'Yes' },
+      { label: 'No', value: 'No' },
+    ],
+    required: true
+  },
+  {
+    key: 'primaryGoal',
+    title: 'What is your top goal for being physically active?',
+    type: 'select',
+    options: [
+      { label: 'Improve health', value: 'Improve health' },
+      { label: 'Lose weight', value: 'Lose weight' },
+      { label: 'Gain strength', value: 'Gain strength' },
+      { label: 'Reduce pain', value: 'Reduce pain' },
+      { label: 'Feel better/energized', value: 'Feel better/energized' },
+      { label: 'Other', value: 'Other' },
+    ],
+    required: true
+  },
+  {
+    key: 'activityPreferences',
+    title: 'What types of physical activity do you enjoy or want to include in your routine? (Select all that apply)',
+    type: 'multiselect',
+    options: [
+      { label: 'Walking/hiking', value: 'Walking/hiking' },
+      { label: 'Strength training', value: 'Strength training' },
+      { label: 'Yoga/stretching', value: 'Yoga/stretching' },
+      { label: 'Group classes', value: 'Group classes' },
+      { label: 'Sports', value: 'Sports' },
+      { label: 'Cycling', value: 'Cycling' },
+      { label: 'Swimming', value: 'Swimming' },
+      { label: 'Home workouts', value: 'Home workouts' },
+      { label: 'Other', value: 'Other' },
+    ],
+    required: true
+  },
+  {
+    key: 'otherActivityPreferences',
+    title: 'Please specify other activities you enjoy',
+    type: 'text',
+    required: false
+  },
+  {
+    key: 'equipmentAccess',
+    title: 'What equipment or facilities do you have access to? (Select all that apply)',
+    type: 'multiselect',
+    options: [
+      { label: 'None / Bodyweight only', value: 'None / Bodyweight only' },
+      { label: 'Dumbbells or resistance bands', value: 'Dumbbells or resistance bands' },
+      { label: 'Gym with machines/weights', value: 'Gym with machines/weights' },
+      { label: 'Cardio equipment', value: 'Cardio equipment' },
+      { label: 'Outdoor space', value: 'Outdoor space' },
+      { label: 'Pool', value: 'Pool' },
+      { label: 'Other', value: 'Other' },
+    ],
+    required: true
+  },
+  {
+    key: 'otherEquipmentAccess',
+    title: 'Please specify other equipment or facilities you have access to',
+    type: 'text',
+    required: false
+  },
+  {
+    key: 'timeCommitment',
+    title: 'How much time can you realistically commit to physical activity each week?',
+    type: 'group',
+    fields: [
+      {
+        key: 'daysPerWeek',
+        title: 'Days per week',
+        type: 'number',
+        min: 1,
+        max: 7,
+        required: true
+      },
+      {
+        key: 'minutesPerSession',
+        title: 'Minutes per session',
+        type: 'number',
+        min: 5,
+        max: 240,
+        required: true
+      },
+      {
+        key: 'preferredTimeOfDay',
+        title: 'Preferred time of day',
+        type: 'select',
+        options: [
+          { label: 'Morning', value: 'Morning' },
+          { label: 'Afternoon', value: 'Afternoon' },
+          { label: 'Evening', value: 'Evening' },
+          { label: 'Flexible', value: 'Flexible' }
+        ],
+        required: true
+      }
+    ]
+  }
+];
 
 const SurveyPage = () => {
-  // Stepper state
-  const questionKeys = Object.keys(intakeSurveySchema.properties);
-  
-  // Reorder question keys to ensure follow-up questions come after their parent questions
-  const orderedQuestionKeys = questionKeys.reduce((acc: string[], key: string) => {
-    if (key === 'otherActivityPreferences' || key === 'otherEquipmentAccess') {
-      // These will be handled dynamically based on selection
-      return acc;
-    } else {
-      acc.push(key);
-      return acc;
-    }
-  }, []);
-  const totalQuestions = orderedQuestionKeys.length;
-  const [currentStep, setCurrentStep] = useState(0);
-
-  // ...existing state
-  const [formData, setFormData] = useState<any>({});
+  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const [submitting, setSubmitting] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
+  const [visibleQuestions, setVisibleQuestions] = useState<Question[]>([]);
   const router = useRouter();
+  
+  // Filter out follow-up questions that aren't needed
+  useEffect(() => {
+    const filteredQuestions: Question[] = [];
+    
+    for (let i = 0; i < questions.length; i++) {
+      const q = questions[i];
+      
+      // Skip follow-up questions, we'll handle them separately
+      if (q.isFollowUp) continue;
+      
+      filteredQuestions.push(q);
+      
+      // Check if this question has a follow-up that should be shown
+      if (q.showFollowUp && q.followUp) {
+        const response = formData[q.key];
+        if (q.showFollowUp(response)) {
+          filteredQuestions.push({
+            ...q.followUp,
+            isFollowUp: true,
+            key: `${q.key}_${q.followUp.key}`
+          });
+        }
+      }
+    }
+    
+    setVisibleQuestions(filteredQuestions);
+  }, [formData]);
+  
+  const currentQuestion = visibleQuestions[currentQuestionIndex];
+  const isLastQuestion = currentQuestionIndex === visibleQuestions.length - 1;
 
-  // Helper for pain question logic
-  const currentPainKey = 'currentPain';
-
-  // Load user and prefill data (unchanged)
   useEffect(() => {
     const fetchUserAndData = async () => {
       const { data: { user } } = await supabase.auth.getUser();
@@ -51,295 +267,251 @@ const SurveyPage = () => {
       }
       setUserId(user.id);
       const { data } = await getSurveyResponse(user.id);
-      if (data && data.response) {
-        setFormData(data.response);
+      if (data && data.length > 0 && data[0].response) {
+        setFormData(data[0].response);
       }
       setLoading(false);
     };
     fetchUserAndData();
   }, [router]);
 
-  // Auto-save handler (debounced)
-  const autoSave = useCallback(debounce(async (newData: any) => {
-    if (!userId) return;
-    setSaveStatus('saving');
-    const { error } = await upsertSurveyResponse(userId, newData);
-    setSaveStatus(error ? 'error' : 'saved');
-  }, 1000), [userId]);
+  const handleChange = (value: any) => {
+    setFormData(prev => ({
+      ...prev,
+      [currentQuestion.key]: value
+    }));
+  };
 
-  // Handle form changes and auto-save after each question
-  const handleChange = (field: string, value: any) => {
-    const newData = { ...formData, [field]: value };
-    setFormData(newData);
-    autoSave(newData);
+  const handleNext = () => {
+    if (currentQuestionIndex < visibleQuestions.length - 1) {
+      setCurrentQuestionIndex(prev => prev + 1);
+    }
+  };
+
+  const handlePrevious = () => {
+    if (currentQuestionIndex > 0) {
+      setCurrentQuestionIndex(prev => prev - 1);
+    }
+  };
+
+  const handleSubmit = async () => {
+    if (!userId) {
+      // Double-check auth state before redirecting
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        router.push('/login');
+        return;
+      }
+      setUserId(user.id);
+    }
     
-    // Check if we need to show follow-up questions when specific fields change
-    if (field === 'activityPreferences') {
-      setShowOtherActivityPreferences(Array.isArray(value) && value.includes('Other'));
-    } else if (field === 'equipmentAccess') {
-      setShowOtherEquipmentAccess(Array.isArray(value) && value.includes('Other'));
+    setSubmitting(true);
+    try {
+      await upsertSurveyResponse(userId, formData);
+      // Force a full page reload to ensure auth state is fresh
+      window.location.href = '/survey/results';
+    } catch (error) {
+      console.error('Error submitting survey:', error);
+      alert('There was an error submitting your survey. Please try again.');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  // Stepper navigation
-  const goNext = () => {
-    if (currentStep < totalQuestions - 1) setCurrentStep(currentStep + 1);
-  };
-  const goPrev = () => {
-    if (currentStep > 0) setCurrentStep(currentStep - 1);
-  };
-
-  // Custom label mapping
-  const customLabels: Record<string, string> = {
-    daysPerWeek: 'Days per week',
-    minutesPerSession: 'Minutes per session',
-    preferredTimeOfDay: 'Preferred time of day'
-  };
-
-  // Track keys that need follow-up questions
-  const [showOtherActivityPreferences, setShowOtherActivityPreferences] = useState(false);
-  const [showOtherEquipmentAccess, setShowOtherEquipmentAccess] = useState(false);
-
-  // Check if we need to show follow-up questions when formData changes
-  useEffect(() => {
-    // Check if 'Other' is selected in activityPreferences
-    setShowOtherActivityPreferences(
-      Array.isArray(formData.activityPreferences) && 
-      formData.activityPreferences.includes('Other')
-    );
+  const renderInput = (question = currentQuestion, groupKey?: string) => {
+    const getValue = (key: string) => {
+      if (groupKey) {
+        return formData[groupKey]?.[key] ?? '';
+      }
+      return formData[question.key] ?? '';
+    };
     
-    // Check if 'Other' is selected in equipmentAccess
-    setShowOtherEquipmentAccess(
-      Array.isArray(formData.equipmentAccess) && 
-      formData.equipmentAccess.includes('Other')
-    );
-  }, [formData.activityPreferences, formData.equipmentAccess]);
-
-  // Render field for stepper
-  const renderQuestion = (key: string, schema: any) => {
-    // Handle follow-up questions for 'Other' selections
-    if (key === 'otherActivityPreferences' && !showOtherActivityPreferences) {
-      // Skip this question if 'Other' is not selected
-      goNext();
-      return null;
-    }
-
-    if (key === 'otherEquipmentAccess' && !showOtherEquipmentAccess) {
-      // Skip this question if 'Other' is not selected
-      goNext();
-      return null;
-    }
-
-    // --- Pain Question Special Handling ---
-    if (key === currentPainKey) {
-      const hasPain = formData[currentPainKey]?.hasPain ?? false;
-      // Show main pain question as Yes/No radio
+    const handleGroupChange = (key: string, value: any) => {
+      setFormData(prev => ({
+        ...prev,
+        [groupKey!]: {
+          ...(prev[groupKey!] || {}),
+          [key]: value
+        }
+      }));
+    };
+    
+    const value = getValue(question.key);
+    const handleChangeFn = groupKey 
+      ? (val: any) => handleGroupChange(question.key, val)
+      : handleChange;
+    
+    // Handle group question type
+    if (question.type === 'group' && !groupKey) {
       return (
-        <div key={key} className="mb-4">
-          <label className="font-semibold">Do you currently experience pain or injury that limits your physical activity?</label>
-          <div className="flex gap-4 mt-2">
-            {['Yes', 'No'].map((option) => (
-              <label key={option} className="mr-4">
+        <div className="space-y-4">
+          {question.fields?.map((field) => (
+            <div key={field.key} className="mb-4">
+              <label className="block font-medium mb-2">{field.title}</label>
+              {renderInput(field, question.key)}
+            </div>
+          ))}
+        </div>
+      );
+    }
+    
+    switch (question.type) {
+      case 'radio':
+        return (
+          <div className="space-y-2">
+            {question.options?.map(option => (
+              <label key={option.value} className="flex items-center space-x-2">
                 <input
                   type="radio"
-                  name="currentPain.hasPain"
-                  value={option}
-                  checked={hasPain === (option === 'Yes')}
-                  required={true}
-                  onChange={e => {
-                    const newVal = e.target.value === 'Yes';
-                    // If switching to No, clear description
-                    handleChange(currentPainKey, { hasPain: newVal, description: newVal ? formData[currentPainKey]?.description || '' : '' });
-                  }}
-                />{' '}{option}
+                  name={question.key}
+                  value={option.value}
+                  checked={value === option.value}
+                  onChange={() => handleChangeFn(option.value)}
+                  className="h-4 w-4 text-blue-600"
+                  required={question.required}
+                />
+                <span>{option.label}</span>
               </label>
             ))}
           </div>
-          {/* Show description only if Yes */}
-          {hasPain && (
-            <div className="mt-4">
-              <label className="font-semibold" htmlFor="currentPain.description">Describe the pain</label>
-              <input
-                type="text"
-                id="currentPain.description"
-                name="currentPain.description"
-                value={formData[currentPainKey]?.description || ''}
-                onChange={e => handleChange(currentPainKey, { hasPain: true, description: e.target.value })}
-                className="border rounded px-2 py-1 w-full mt-1"
-                placeholder="Describe the pain"
-              />
-            </div>
-          )}
-        </div>
-      );
-    }
-
-    // Dropdowns for specified fields
-    if (["activityFrequency", "physicalFunction", "sleep", "primaryGoal"].includes(key) && schema.enum) {
-      return (
-        <div key={key} className="mb-4">
-          <label className="font-semibold">{schema.title}</label>
+        );
+      
+      case 'select':
+        return (
           <select
-            name={key}
-            value={formData[key] ?? ''}
-            required={intakeSurveySchema.required.includes(key)}
-            className="border rounded px-2 py-1 w-full mt-1"
-            onChange={e => handleChange(key, e.target.value)}
+            value={value}
+            onChange={(e) => handleChangeFn(e.target.value)}
+            className="w-full p-2 border rounded"
+            required={question.required}
           >
-            <option value="" disabled>Select...</option>
-            {schema.enum.map((option: string) => (
-              <option key={option} value={option}>{option}</option>
+            <option value="">Select an option</option>
+            {question.options?.map(option => (
+              <option key={option.value} value={option.value}>
+                {option.label}
+              </option>
             ))}
           </select>
-        </div>
-      );
-    }
-
-    // Number input (with custom label if present)
-    if (schema.type === 'integer') {
-      return (
-        <div key={key} className="mb-4">
-          <label className="font-semibold">{customLabels[key] || schema.title}</label>
-          <input
-            type="number"
-            name={key}
-            min={schema.minimum}
-            max={schema.maximum}
-            value={formData[key] ?? ''}
-            required={intakeSurveySchema.required.includes(key)}
-            className="border rounded px-2 py-1 w-24 ml-2"
-            onChange={e => handleChange(key, Number(e.target.value))}
-          />
-        </div>
-      );
-    }
-
-    // Multi-select checkboxes
-    if (schema.type === 'array' && schema.items && schema.items.enum) {
-      return (
-        <div key={key} className="mb-4">
-          <label className="font-semibold">{schema.title}</label>
-          <div className="flex flex-wrap gap-2 mt-1">
-            {schema.items.enum.map((option: string) => (
-              <label key={option} className="mr-4">
+        );
+      
+      case 'multiselect':
+        const selectedValues = Array.isArray(value) ? value : [];
+        return (
+          <div className="space-y-2">
+            {question.options?.map(option => (
+              <label key={option.value} className="flex items-center space-x-2">
                 <input
                   type="checkbox"
-                  name={key}
-                  value={option}
-                  checked={Array.isArray(formData[key]) && formData[key].includes(option)}
-                  onChange={e => {
-                    let arr = Array.isArray(formData[key]) ? [...formData[key]] : [];
-                    if (e.target.checked) arr.push(option);
-                    else arr = arr.filter((v: string) => v !== option);
-                    handleChange(key, arr);
+                  checked={selectedValues.includes(option.value)}
+                  onChange={(e) => {
+                    const newValue = e.target.checked
+                      ? [...selectedValues, option.value]
+                      : selectedValues.filter(v => v !== option.value);
+                    handleChangeFn(newValue);
                   }}
-                />{' '}{option}
+                  className="h-4 w-4 text-blue-600"
+                />
+                <span>{option.label}</span>
               </label>
             ))}
           </div>
-        </div>
-      );
+        );
+      
+      case 'number':
+        return (
+          <input
+            type="number"
+            value={value || ''}
+            onChange={(e) => handleChangeFn(Number(e.target.value))}
+            className="w-full p-2 border rounded"
+            min={question.min}
+            max={question.max}
+            required={question.required}
+          />
+        );
+      
+      case 'text':
+        return (
+          <textarea
+            value={value || ''}
+            onChange={(e) => handleChangeFn(e.target.value)}
+            className="w-full p-2 border rounded"
+            rows={3}
+            required={question.required}
+          />
+        );
+      
+      default:
+        return null;
     }
+  };
 
-    // Nested object (timeCommitment)
-    if (schema.type === 'object' && key === 'timeCommitment') {
-      const tc = formData[key] || {};
-      return (
-        <fieldset key={key} className="mb-4 border p-3 rounded">
-          <legend className="font-semibold">{schema.title}</legend>
-          <div className="mb-2">
-            <label className="block font-semibold">Days per week</label>
-            <input
-              type="number"
-              min={schema.properties.daysPerWeek.minimum}
-              max={schema.properties.daysPerWeek.maximum}
-              value={tc.daysPerWeek ?? ''}
-              required={schema.required?.includes('daysPerWeek')}
-              className="border rounded px-2 py-1 w-24"
-              onChange={e => handleChange(key, { ...tc, daysPerWeek: Number(e.target.value) })}
-            />
-          </div>
-          <div className="mb-2">
-            <label className="block font-semibold">Minutes per session</label>
-            <input
-              type="number"
-              min={schema.properties.minutesPerSession.minimum}
-              value={tc.minutesPerSession ?? ''}
-              required={schema.required?.includes('minutesPerSession')}
-              className="border rounded px-2 py-1 w-32"
-              onChange={e => handleChange(key, { ...tc, minutesPerSession: Number(e.target.value) })}
-            />
-          </div>
-          <div className="mb-2">
-            <label className="block font-semibold">Preferred time of day</label>
-            <select
-              value={tc.preferredTimeOfDay ?? ''}
-              required={schema.required?.includes('preferredTimeOfDay')}
-              className="border rounded px-2 py-1 w-full"
-              onChange={e => handleChange(key, { ...tc, preferredTimeOfDay: e.target.value })}
-            >
-              <option value="" disabled>Select...</option>
-              {schema.properties.preferredTimeOfDay.enum.map((option: string) => (
-                <option key={option} value={option}>{option}</option>
-              ))}
-            </select>
-          </div>
-        </fieldset>
-      );
-    }
-
-    // Default: text input
-    return (
-      <div key={key} className="mb-4">
-        <label className="font-semibold">{schema.title || key}</label>
-        <input
-          type="text"
-          name={key}
-          value={formData[key] ?? ''}
-          required={intakeSurveySchema.required.includes(key)}
-          className="border rounded px-2 py-1 w-full"
-          onChange={e => handleChange(key, e.target.value)}
-        />
-      </div>
-  );
-}
+  if (loading) {
+    return <div className="flex min-h-screen items-center justify-center text-gray-500">Loading...</div>;
+  }
 
   return (
-    <div className="container mx-auto p-4 max-w-2xl">
-      <h1 className="text-2xl font-bold mb-6">Intake Survey</h1>
-      
-      {/* Progress indicator */}
+    <div className="max-w-2xl mx-auto py-10 px-4">
       <div className="mb-6">
-        <div className="flex justify-between mb-2">
-          <span>Question {currentStep + 1} of {totalQuestions}</span>
-          <span>{Math.round(((currentStep + 1) / totalQuestions) * 100)}%</span>
-        </div>
+        <h1 className="text-2xl font-bold mb-2">Intake Survey</h1>
         <div className="w-full bg-gray-200 rounded-full h-2.5">
           <div 
             className="bg-blue-600 h-2.5 rounded-full" 
-            style={{ width: `${((currentStep + 1) / totalQuestions) * 100}%` }}
+            style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
           ></div>
         </div>
+        <p className="text-sm text-gray-600 mt-1">
+          Question {currentQuestionIndex + 1} of {visibleQuestions.length}
+        </p>
       </div>
-      
-      {/* Current question */}
-      {renderQuestion(orderedQuestionKeys[currentStep], intakeSurveySchema.properties[orderedQuestionKeys[currentStep] as keyof typeof intakeSurveySchema.properties])}
-      
-      {/* Navigation buttons */}
-      <div className="flex justify-between mt-6">
-        <button 
-          onClick={goPrev} 
-          disabled={currentStep === 0}
-          className="px-4 py-2 bg-gray-200 rounded disabled:opacity-50"
-        >
-          Previous
-        </button>
-        <button 
-          onClick={goNext} 
-          className="px-4 py-2 bg-blue-600 text-white rounded"
-        >
-          {currentStep === totalQuestions - 1 ? 'Finish' : 'Next'}
-        </button>
+
+      <div className="bg-white p-6 rounded-lg shadow-md">
+        <h2 className="text-xl font-semibold mb-6">{currentQuestion.title}</h2>
+        
+        <div className="mb-8 space-y-4">
+          {currentQuestion.type === 'group' ? (
+            currentQuestion.fields?.map((field) => (
+              <div key={field.key} className="mb-4">
+                <label className="block font-medium mb-2">{field.title}</label>
+                {renderInput(field, currentQuestion.key)}
+              </div>
+            ))
+          ) : (
+            renderInput()
+          )}
+        </div>
+
+        <div className="flex justify-between">
+          <button
+            type="button"
+            onClick={handlePrevious}
+            disabled={currentQuestionIndex === 0}
+            className={`px-4 py-2 rounded ${currentQuestionIndex === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-gray-600 text-white hover:bg-gray-700'}`}
+          >
+            Previous
+          </button>
+          
+          {!isLastQuestion ? (
+            <button
+              type="button"
+              onClick={handleNext}
+              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+              disabled={!formData[currentQuestion.key] && currentQuestion.required}
+            >
+              Next
+            </button>
+          ) : (
+            <button
+              type="button"
+              onClick={handleSubmit}
+              disabled={submitting || (currentQuestion.required && !formData[currentQuestion.key])}
+              className={`px-6 py-2 rounded ${(submitting || (currentQuestion.required && !formData[currentQuestion.key])) 
+                ? 'bg-blue-400 cursor-not-allowed' 
+                : 'bg-green-600 hover:bg-green-700'} text-white`}
+            >
+              {submitting ? 'Submitting...' : 'Submit Survey'}
+            </button>
+          )}
+        </div>
       </div>
     </div>
   );

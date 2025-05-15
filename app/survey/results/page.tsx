@@ -5,11 +5,35 @@ import { getSurveyResponse } from "@/utils/surveyResponses";
 import intakeSurveySchema from "../intake-survey-questions.json";
 
 function formatAnswer(key: string, value: any, schema: any): React.ReactNode {
+  // Handle time commitment object
+  if (key === 'timeCommitment' && value && typeof value === 'object') {
+    return (
+      <div className="ml-4 space-y-1">
+        <div>Days per week: {value.daysPerWeek || 'Not specified'}</div>
+        <div>Minutes per session: {value.minutesPerSession || 'Not specified'}</div>
+        <div>Preferred time: {value.preferredTimeOfDay || 'Not specified'}</div>
+      </div>
+    );
+  }
+  
+  // Handle array values (like multiselect)
+  if (Array.isArray(value)) {
+    return value.length > 0 ? value.join(', ') : 'None';
+  }
+  
+  // Handle enum values
   if (schema[key]?.enum) {
     const label = schema[key].enumNames?.[schema[key].enum.indexOf(value)] ?? value;
-    return <span>{label}</span>;
+    return <span>{label || 'Not specified'}</span>;
   }
-  return <span>{value}</span>;
+  
+  // Handle boolean values
+  if (typeof value === 'boolean') {
+    return value ? 'Yes' : 'No';
+  }
+  
+  // Default case
+  return <span>{value !== undefined && value !== null ? value.toString() : 'Not specified'}</span>;
 }
 
 const SurveyResultsPage = () => {
@@ -21,30 +45,41 @@ const SurveyResultsPage = () => {
   const router = useRouter();
 
   useEffect(() => {
-    const fetchUser = async () => {
+    const checkAuthAndFetchData = async () => {
       setAuthLoading(true);
-      const { data: { user } } = await import("@/utils/supabaseClient").then(m => m.supabase.auth.getUser());
-      setUser(user);
-      setAuthLoading(false);
+      try {
+        const { data: { user } } = await import("@/utils/supabaseClient").then(m => m.supabase.auth.getUser());
+        
+        if (!user) {
+          router.replace("/login?redirectedFrom=survey");
+          return;
+        }
+        
+        setUser(user);
+        
+        // Only fetch survey data if we have a valid user
+        setLoading(true);
+        setError(null);
+        const { data, error } = await getSurveyResponse(user.id);
+        
+        if (error) {
+          console.error("Error fetching survey response:", error);
+          setError("Failed to fetch survey response. Please try again.");
+        } else {
+          setResponse(data && data.length > 0 ? data[0].response : null);
+        }
+      } catch (err) {
+        console.error("Auth error:", err);
+        setError("An authentication error occurred. Please log in again.");
+        router.replace("/login?error=auth");
+      } finally {
+        setLoading(false);
+        setAuthLoading(false);
+      }
     };
-    fetchUser();
-  }, []);
-
-  useEffect(() => {
-    if (!user) {
-      router.replace("/login");
-      return;
-    }
-    const fetchData = async () => {
-      setLoading(true);
-      setError(null);
-      const { data, error } = await getSurveyResponse(user.id);
-      if (error) setError("Failed to fetch survey response.");
-      setResponse(data && data.length > 0 ? data[0].response : null);
-      setLoading(false);
-    };
-    fetchData();
-  }, [user, authLoading, router]);
+    
+    checkAuthAndFetchData();
+  }, [router]);
 
   const isComplete = response &&
     intakeSurveySchema.required.every((key: string) => response[key] !== undefined && response[key] !== "");
