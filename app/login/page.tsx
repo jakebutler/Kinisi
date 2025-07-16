@@ -1,6 +1,8 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
+import { getPostLoginRedirect } from "@/utils/userFlow";
 import Link from "next/link";
 
 export default function LoginPage() {
@@ -8,14 +10,30 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const router = useRouter();
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
-    const { error } = await supabase.auth.signInWithPassword({ email, password });
-    if (error) setError(error.message);
-    setLoading(false);
+    
+    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+    
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    } else if (data.user) {
+      // Determine where to redirect the user
+      try {
+        const redirectPath = await getPostLoginRedirect(data.user.id);
+        router.push(redirectPath);
+      } catch (redirectError) {
+        console.error('Error determining redirect path:', redirectError);
+        // Fallback to dashboard if there's an error
+        router.push('/dashboard');
+      }
+      setLoading(false);
+    }
   };
 
   return (

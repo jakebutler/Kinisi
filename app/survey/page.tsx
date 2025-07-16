@@ -295,21 +295,24 @@ const SurveyPage = () => {
   };
 
   const handleSubmit = async () => {
-    if (!userId) {
+    let currentUserId = userId;
+    
+    if (!currentUserId) {
       // Double-check auth state before redirecting
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         router.push('/login');
         return;
       }
+      currentUserId = user.id;
       setUserId(user.id);
     }
     
     setSubmitting(true);
     try {
-      await upsertSurveyResponse(userId, formData);
-      // Force a full page reload to ensure auth state is fresh
-      window.location.href = '/survey/results';
+      await upsertSurveyResponse(currentUserId, formData);
+      // Redirect to dashboard after successful survey completion
+      router.push('/dashboard');
     } catch (error) {
       console.error('Error submitting survey:', error);
       alert('There was an error submitting your survey. Please try again.');

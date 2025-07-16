@@ -19,19 +19,7 @@ export const metadata: Metadata = {
 
 import { AuthProvider } from "@/components/context/AuthContext";
 import NavBar from "@/components/ui/NavBar";
-import dynamic from 'next/dynamic';
-
-// Dynamically import StagewiseToolbar with SSR disabled
-const StagewiseToolbar = dynamic(
-  () => import('@stagewise/toolbar-next').then((mod) => mod.StagewiseToolbar),
-  { ssr: false }
-);
-
-// Dynamically import ReactPlugin with SSR disabled
-const ReactPlugin = dynamic(
-  () => import('@stagewise-plugins/react').then((mod) => mod.ReactPlugin),
-  { ssr: false }
-);
+import StagewiseToolbarWrapper from "../components/StagewiseToolbar";
 
 export default function RootLayout({
   children,
@@ -46,13 +34,7 @@ export default function RootLayout({
         <AuthProvider>
           <NavBar />
           <main>{children}</main>
-          <StagewiseToolbar 
-            config={{
-              plugins: [
-                ReactPlugin && new ReactPlugin()
-              ].filter(Boolean)
-            }} 
-          />
+          <StagewiseToolbarWrapper />
         </AuthProvider>
       </body>
     </html>

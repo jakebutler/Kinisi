@@ -5,6 +5,7 @@ export type Assessment = {
   user_id: string;
   survey_response_id: string;
   assessment: string;
+  approved?: boolean;
   created_at: string;
   updated_at: string;
 };
