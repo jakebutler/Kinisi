@@ -96,41 +96,19 @@ export default function AssessmentChat({
   };
 
   return (
-    // Removed flex/height/max-height styles as no chat history area is needed
     <div className="border rounded bg-white p-4">
-      <div className="mb-2 font-semibold">Assessment Feedback</div> {/* Updated title */}
-      {/* Keep error display */}
-      {error && <div className="text-red-600 mb-2">{error}</div>}
-
-      {/* --- Remove Message Display Area --- */}
-      {/*
-      <div className="flex-1 overflow-y-auto mb-4 space-y-2">
-        {messages.map((msg, index) => (
-          <div key={index} className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}>
-            <div className={`rounded px-3 py-1 max-w-[80%] ${
-              msg.sender === 'user' ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-800'
-            }`}>
-              {msg.text}
-            </div>
-          </div>
-        ))}
-        {loading && (
-             <div className="flex justify-start">
-               <div className="rounded px-3 py-1 bg-gray-200 text-gray-600 text-sm italic">
-                 AI is thinking...
-               </div>
-             </div>
-           )}
+      <div className="mb-2 font-semibold">Assessment Feedback</div>
+      {/* Show the current assessment text for user context */}
+      <div className="mb-4 text-gray-800" data-testid="assessment-text">
+        {currentAssessment}
       </div>
-      */}
-
-
-      {/* --- Keep Input Form --- */}
+      {/* Error display */}
+      {error && <div className="text-red-600 mb-2">{error}</div>}
       <form onSubmit={handleSend} className="flex gap-2">
         <input
           type="text"
           className="flex-1 border rounded px-2 py-1"
-          placeholder={loading ? "Sending feedback..." : "Suggest a change or give feedback..."} // Updated placeholder
+          placeholder={loading ? "Sending feedback..." : "Suggest a change or give feedback..."}
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={loading}
