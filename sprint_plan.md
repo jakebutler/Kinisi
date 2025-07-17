@@ -1,4 +1,6 @@
 # 🏆 Kinisi Sprint Plan & Ticket Breakdown
+**Last Updated: July 29, 2024**
+**Current Focus: Sprint 4**
 
 This document outlines the sprint plan, individual engineering tickets, and manual testing criteria required to build the Kinisi web application based on the approved PRD.
 
@@ -15,7 +17,7 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 - **Deployment**: Netlify
 - **Version Control**: GitHub
 
-## ✨ **Sprint 1: Authentication**
+## ✨ **Sprint 1: Authentication (Completed)**
 
 ### Features:
 
@@ -26,72 +28,24 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 
 ### Tickets:
 
-1. **\[FE] Create sign-in and sign-up screens**
-
-   * **Description**: Build mobile-friendly sign-in and sign-up forms using Tailwind. Include validation.
-   * **Acceptance Criteria**:
-
-     * User can enter email/password
-     * Toggle between forms
-     * Client-side form validation
-   * **Labels**: frontend, auth, sprint1
-
-2. **\[FE] Add toggle between login and register forms**
-
-   * **Description**: UI toggle between new user registration and login views
-   * **Acceptance Criteria**:
-
-     * UI updates appropriately when toggled
-     * State is preserved
-   * **Labels**: frontend, ui, sprint1
-
-3. **\[FE] Add "forgot password" flow with email reset**
-
-   * **Description**: Implement Supabase reset password flow triggered from "Forgot Password" link
-   * **Acceptance Criteria**:
-
-     * Reset email is sent
-     * User can set new password
-   * **Labels**: frontend, auth, sprint1
-
-4. **\[BE] Integrate Supabase Auth for sign-up, sign-in, and session persistence**
-
-   * **Description**: Wire up frontend auth forms to Supabase backend and manage auth session
-   * **Acceptance Criteria**:
-
-     * User stays logged in after page reload
-     * Token is stored securely
-   * **Labels**: backend, auth, supabase, sprint1
-
-5. **\[FE] Build responsive layout and top nav bar (logo left, user/sign out right)**
-
-   * **Description**: Header component across pages
-   * **Acceptance Criteria**:
-
-     * Header layout works across screen sizes
-     * Username and sign out button functional
-   * **Labels**: frontend, ui, responsive, sprint1
-
-6. **\[INFRA] Set up Supabase project, DB schema, and env config**
-
-   * **Description**: Set up Supabase instance, basic schema, roles, and .env file for dev
-   * **Acceptance Criteria**:
-
-     * Supabase project configured
-     * Local dev can connect to DB
-   * **Labels**: infra, supabase, sprint1
+1. **\[FE] Create sign-in and sign-up screens (DONE)**
+2. **\[FE] Add toggle between login and register forms (DONE)**
+3. **\[FE] Add "forgot password" flow with email reset (DONE)**
+4. **\[BE] Integrate Supabase Auth for sign-up, sign-in, and session persistence (DONE)**
+5. **\[FE] Build responsive layout and top nav bar (logo left, user/sign out right) (DONE)**
+6. **\[INFRA] Set up Supabase project, DB schema, and env config (DONE)**
 
 ### Testing Criteria:
 
-* [ ] User can register a new account and stay logged in
-* [ ] User can sign in/out successfully
-* [ ] Password reset email is sent and works
-* [ ] Auth state persists across page reload
-* [ ] All views render correctly on mobile
+* [x] User can register a new account and stay logged in
+* [x] User can sign in/out successfully
+* [x] Password reset email is sent and works
+* [x] Auth state persists across page reload
+* [x] All views render correctly on mobile
 
 ---
 
-## ✨ **Sprint 2: Intake Survey**
+## ✨ **Sprint 2: Intake Survey (Completed)**
 
 ### Features:
 
@@ -101,57 +55,22 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 
 ### Tickets:
 
-1. **\[FE] Build dynamic intake survey form from JSON schema**
-
-   * **Description**: Render fields dynamically from provided JSON schema, validate inputs
-   * **Acceptance Criteria**:
-
-     * All required fields render correctly
-     * Data passes validation
-   * **Labels**: frontend, survey, sprint2
-
-2. **\[BE] Create DB schema for storing survey responses**
-
-   * **Description**: Design table to store structured JSON responses in Supabase
-   * **Acceptance Criteria**:
-
-     * Survey data is queryable by user ID
-   * **Labels**: backend, supabase, survey, sprint2
-
-3. **\[FE] Connect form submission to Supabase storage**
-
-   * **Description**: On submit, write survey JSON to user record in Supabase
-   * **Acceptance Criteria**:
-
-     * Responses persist on refresh
-   * **Labels**: frontend, backend, sprint2
-
-4. **\[FE] Build "View survey results" UI for signed-in users**
-
-   * **Description**: Show submitted responses in read-only format
-   * **Acceptance Criteria**:
-
-     * Users can verify saved answers
-   * **Labels**: frontend, survey, sprint2
-
-5. **\[FE] Add "Edit survey" button and support pre-filling form**
-
-   * **Description**: Load existing responses into form on revisit
-   * **Acceptance Criteria**:
-
-     * Form reflects previous inputs
-   * **Labels**: frontend, survey, sprint2
+1. **\[FE] Build dynamic intake survey form from JSON schema (DONE)**
+2. **\[BE] Create DB schema for storing survey responses (DONE)**
+3. **\[FE] Connect form submission to Supabase storage (DONE)**
+4. **\[FE] Build "View survey results" UI for signed-in users (DONE)**
+5. **\[FE] Add "Edit survey" button and support pre-filling form (DONE)**
 
 ### Testing Criteria:
 
-* [ ] User can complete and submit survey
-* [ ] User responses are stored and visible after refresh
-* [ ] Survey can be edited and resubmitted
-* [ ] Survey fields match schema
+* [x] User can complete and submit survey
+* [x] User responses are stored and visible after refresh
+* [x] Survey can be edited and resubmitted
+* [x] Survey fields match schema
 
 ---
 
-## ✨ **Sprint 3: Personalized Assessment (LLM Agent #1)**
+## ✨ **Sprint 3: Personalized Assessment (LLM Agent #1) (Completed)**
 
 ### Features:
 
@@ -161,60 +80,19 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 
 ### Tickets:
 
-1. **\[LLM] Design prompt and chain for Agent #1 (survey → assessment)**
-
-   * **Description**: Define input/output structure and refine prompt via testing
-   * **Acceptance Criteria**:
-
-     * Returns coherent summary from survey inputs
-   * **Labels**: llm, agent1, sprint3
-
-2. **\[BE] Create endpoint to trigger and store assessment result**
-
-   * **Description**: API to submit survey + store returned assessment
-   * **Acceptance Criteria**:
-
-     * Result is linked to user ID
-   * **Labels**: backend, llm, sprint3
-
-3. **\[FE] UI for viewing Personalized Assessment and raw inputs**
-
-   * **Description**: Two-column layout with raw answers and assessment summary
-   * **Acceptance Criteria**:
-
-     * Clearly distinguishes AI-generated content
-   * **Labels**: frontend, ui, sprint3
-
-4. **\[FE] Chat interface for feedback (assessment context)**
-
-   * **Description**: Chat box for user to improve assessment
-   * **Acceptance Criteria**:
-
-     * Freeform input sends to LLM
-   * **Labels**: frontend, chat, sprint3
-
-5. **\[LLM] Enable feedback-driven updates to assessment via chat**
-
-   * **Description**: Prompt revision agent and return updated text
-   * **Acceptance Criteria**:
-
-     * New summaries reflect user requests
-   * **Labels**: llm, chat, sprint3
-
-6. **\[FE] UI flow: user approval step after chat-refined version**
-
-   * **Description**: Approval button to confirm final summary
-   * **Acceptance Criteria**:
-
-     * User must approve before moving on
-   * **Labels**: frontend, sprint3
+1. **\[LLM] Design prompt and chain for Agent #1 (survey → assessment) (DONE)**
+2. **\[BE] Create endpoint to trigger and store assessment result (DONE)**
+3. **\[FE] UI for viewing Personalized Assessment and raw inputs (DONE)**
+4. **\[FE] Chat interface for feedback (assessment context) (DONE)**
+5. **\[LLM] Enable feedback-driven updates to assessment via chat (DONE)**
+6. **\[FE] UI flow: user approval step after chat-refined version (DONE)**
 
 ### Testing Criteria:
 
-* [ ] Personalized Assessment is generated and shown after survey
-* [ ] Chat accepts user input and revises the assessment accordingly
-* [ ] Final assessment is clearly marked as "Approved"
-* [ ] Edge case: empty/ambiguous feedback is handled gracefully
+* [x] Personalized Assessment is generated and shown after survey
+* [x] Chat accepts user input and revises the assessment accordingly
+* [x] Final assessment is clearly marked as "Approved"
+* [x] Edge case: empty/ambiguous feedback is handled gracefully
 
 ---
 
@@ -230,58 +108,44 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 ### Tickets:
 
 1. **\[LLM] Design prompt and chain for Agent #2 (assessment → program)**
-
    * **Description**: Transform summary into structured workout sessions
    * **Acceptance Criteria**:
-
      * Output includes all required session fields
    * **Labels**: llm, agent2, sprint4
 
 2. **\[BE] Store exercise program sessions in DB (week, session, etc.)**
-
    * **Description**: Design schema for multi-week session plan
    * **Acceptance Criteria**:
-
      * Sessions are ordered, linked, and queryable
    * **Labels**: backend, program, sprint4
 
 3. **\[FE] Weekly schedule view with clickable session cards**
-
    * **Description**: Grid layout to browse sessions by week
    * **Acceptance Criteria**:
-
      * Sessions clickable to open detail
    * **Labels**: frontend, ui, sprint4
 
 4. **\[FE] Session detail modal: exercise list, links, variations**
-
    * **Description**: Modal or drawer with session content
    * **Acceptance Criteria**:
-
      * All exercises and links shown
    * **Labels**: frontend, ui, sprint4
 
 5. **\[FE] Chat interface with feedback context on program**
-
    * **Description**: Allow feedback on sessions or full program
    * **Acceptance Criteria**:
-
      * Input appears inline with sessions
    * **Labels**: frontend, chat, sprint4
 
 6. **\[LLM] Enable program modifications via freeform chat**
-
    * **Description**: Use updated feedback to re-write future sessions
    * **Acceptance Criteria**:
-
      * User comments trigger new plan output
    * **Labels**: llm, chat, sprint4
 
 7. **\[FE] Mark final version as "Approved" after updates**
-
    * **Description**: Confirm dialog to approve revised plan
    * **Acceptance Criteria**:
-
      * Program is locked in post-approval
    * **Labels**: frontend, sprint4
 

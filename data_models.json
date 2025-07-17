@@ -16,8 +16,11 @@
   "PersonalizedAssessment": {
     "id": "string (uuid)",
     "user_id": "string (uuid, FK to User)",
+    "survey_response_id": "string (uuid, FK to SurveyResponse)",
     "assessment_text": "string",
     "status": "string (e.g., draft, approved)",
+    "feedback": "string",
+    "revision_of": "string (uuid, FK to PersonalizedAssessment)",
     "created_at": "datetime",
     "updated_at": "datetime"
   },
@@ -37,6 +40,7 @@
   "ExerciseProgram": {
     "id": "string (uuid)",
     "user_id": "string (uuid, FK to User)",
+    "assessment_id": "string (uuid, FK to PersonalizedAssessment)",
     "status": "string (e.g., draft, approved)",
     "created_at": "datetime",
     "updated_at": "datetime"
