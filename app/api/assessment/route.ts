@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { generateAssessmentFromSurvey } from '../../../utils/assessmentChain.js';
-import { supabase } from '../../../utils/supabaseClient.js';
+import { generateAssessmentFromSurvey } from '../../../utils/assessmentChain';
+import { supabase } from '../../../utils/supabaseClient';
 
-// POST /api/assessment
+// POST /api/assessment - Generate personalized assessment
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();

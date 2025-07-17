@@ -1,5 +1,6 @@
 "use client";
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import Link from "next/link";
 
@@ -9,16 +10,33 @@ export default function RegisterPage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const router = useRouter();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setSuccess("");
-    const { error } = await supabase.auth.signUp({ email, password });
-    if (error) setError(error.message);
-    else setSuccess("Check your email for a confirmation link.");
-    setLoading(false);
+    
+    const { data, error } = await supabase.auth.signUp({ email, password });
+    
+    if (error) {
+      setError(error.message);
+      setLoading(false);
+    } else {
+      // For new registrations, we want to redirect to survey after email confirmation
+      // Check if email confirmation is required
+      if (data.user && !data.user.email_confirmed_at) {
+        setSuccess("Check your email for a confirmation link. After confirming, you'll be redirected to complete your profile.");
+        setLoading(false);
+      } else if (data.user) {
+        // If email is already confirmed (auto-confirm enabled), redirect to survey
+        setSuccess("Registration successful! Redirecting to survey...");
+        setTimeout(() => {
+          router.push('/survey');
+        }, 2000);
+      }
+    }
   };
 
   return (

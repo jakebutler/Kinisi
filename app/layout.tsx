@@ -19,6 +19,7 @@ export const metadata: Metadata = {
 
 import { AuthProvider } from "@/components/context/AuthContext";
 import NavBar from "@/components/ui/NavBar";
+import StagewiseToolbarWrapper from "../components/StagewiseToolbar";
 
 export default function RootLayout({
   children,
@@ -33,6 +34,7 @@ export default function RootLayout({
         <AuthProvider>
           <NavBar />
           <main>{children}</main>
+          <StagewiseToolbarWrapper />
         </AuthProvider>
       </body>
     </html>
