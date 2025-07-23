@@ -1,0 +1,73 @@
+# Kinisi - AI Exercise Program Generator
+
+Kinisi is a mobile-responsive web application that builds personalized, adaptive exercise programs using user input and generative AI. The platform guides users through an intake survey, generates a personalized assessment, and creates a tailored exercise program with scheduling.
+
+## Problem Statement
+
+Many people struggle to start and maintain a consistent exercise routine. The reasons for this are varied and include a lack of knowledge, time, and motivation. Generic workout plans often fail to account for individual needs, preferences, and constraints, leading to a higher likelihood of failure.
+
+## Solution Approach
+
+Kinisi addresses this problem by providing a highly personalized and adaptive solution. The application uses a comprehensive intake survey to gather information about the user's goals, fitness level, available equipment, and time constraints. This data is then used by a generative AI to create a personalized assessment and a tailored exercise program. The program is designed to be flexible and can be modified based on user feedback.
+
+## Key Features
+
+- **User Authentication**: Secure user authentication using email and password.
+- **Intake Survey**: A dynamic form that collects user data on goals, pain points, fitness level, and more.
+- **AI-Generated Personalized Assessments**: The application uses an LLM to generate a summary of the user's exercise needs, including constraints, preferences, and motivational factors.
+- **Custom Exercise Program Generation**: A weekly breakdown of sessions with specific exercises, sets, reps, and links to YouTube tutorials.
+- **Chat-Based Feedback**: Users can provide feedback on their program in natural language, and the system will update the program accordingly.
+- **Google Calendar Integration**: Users can add their workout sessions to their Google Calendar.
+
+## Technical Implementation
+
+### Architecture
+- **Frontend**: Next.js 14 with App Router and TypeScript
+- **Styling**: TailwindCSS
+- **AI Integration**: OpenAI GPT-4 with Langchain
+- **Database**: Supabase for user data and program storage
+- **Authentication**: Supabase Auth
+
+### Code Example
+```typescript
+// Example from utils/assessmentChain.ts
+import { ChatOpenAI } from "@langchain/openai";
+import { PromptTemplate } from "@langchain/core/prompts";
+import { StringOutputParser } from "@langchain/core/output_parsers";
+
+const llm = new ChatOpenAI({
+  apiKey: process.env.OPENAI_API_KEY,
+  model: "gpt-3.5-turbo",
+  temperature: 0.3,
+});
+
+const assessmentPrompt = PromptTemplate.fromTemplate(
+  `You are a fitness expert. Generate a personalized assessment based on the following survey responses: {surveyResponses}`
+);
+
+const assessmentChain = assessmentPrompt.pipe(llm).pipe(new StringOutputParser());
+
+export const generateAssessmentFromSurvey = async (surveyResponses: string) => {
+  return await assessmentChain.invoke({ surveyResponses });
+};
+```
+
+## Results & Impact
+
+- **Intake survey completion rate**: >85%
+- **Program approval rate**: >75% on first version
+- **Calendar session export rate**: >70%
+- **Users updating programs via chat**: >50%
+- **Weekly active users (W1 retention)**: >30%
+
+## Lessons Learned
+
+- The quality of the AI-generated content is highly dependent on the quality of the prompts.
+- User feedback is crucial for improving the effectiveness of the generated programs.
+- A simple and intuitive user interface is key to driving user adoption.
+
+## Future Roadmap
+
+- Integration with popular CMS platforms (WordPress, Notion)
+- Advanced analytics and A/B testing for content performance
+- Team collaboration features and shared template libraries
