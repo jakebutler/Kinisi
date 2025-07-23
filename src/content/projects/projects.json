@@ -1,0 +1,28 @@
+{
+  "kinisi-app": {
+    "id": "kinisi-app",
+    "slug": "kinisi-app",
+    "title": "Kinisi - AI Exercise Program Generator",
+    "subtitle": "AI-powered personalized exercise program generator.",
+    "description": "A mobile-responsive web application that builds personalized, adaptive exercise programs using user input from an intake survey and generative AI. It features user authentication, dynamic survey generation, AI-generated assessments, and custom exercise program creation.",
+    "status": "completed",
+    "categories": ["AI Tools", "Healthcare"],
+    "technologies": ["Next.js", "TypeScript", "TailwindCSS", "Supabase", "PostgreSQL", "OpenAI", "Langchain", "Playwright", "Jest"],
+    "startDate": "2024-01-01",
+    "endDate": "2024-07-22",
+    "featured": true,
+    "priority": 1,
+    "image": "/images/projects/kinisi-hero.jpg",
+    "screenshots": [],
+    "links": {
+      "github": "https://github.com/jakebutler/Kinisi"
+    },
+    "metrics": {
+      "impact": "Generates personalized exercise programs to help users build healthy habits.",
+      "timeline": "Approx. 7 months"
+    },
+    "team": ["Solo Project"],
+    "client": "Internal",
+    "tags": ["MVP", "Production", "AI", "Healthcare"]
+  }
+}
