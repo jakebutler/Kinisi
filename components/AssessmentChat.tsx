@@ -4,7 +4,7 @@ import React, { useState } from "react";
 
 interface AssessmentChatProps {
   initialAssessment: string;
-  surveyResponses: Record<string, any>; // Keep if the API still needs it for context
+  surveyResponses: Record<string, unknown>; // Keep if the API still needs it for context
   userId: string; // Keep if the API still needs it
   onAssessmentUpdate?: (newAssessment: string) => void; // Callback to update parent's assessment
 }
@@ -87,9 +87,9 @@ export default function AssessmentChat({
       // console.log("Assessment updated successfully!");
 
 
-    } catch (err: any) { // Catch error object to log it
+    } catch (err: unknown) { // Catch error object to log it
        console.error("Assessment feedback failed:", err); // Log the error
-       setError(`Failed to update assessment: ${err.message || 'Unknown error'}`); // Display more info if available
+       setError(`Failed to update assessment: ${err instanceof Error ? err.message : 'Unknown error'}`); // Display more info if available
     } finally {
       setLoading(false);
     }

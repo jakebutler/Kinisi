@@ -1,8 +1,7 @@
 "use client";
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useEffect, useState } from 'react';
 import { upsertSurveyResponse, getSurveyResponse } from '../../utils/surveyResponses';
 import { supabase } from '../../utils/supabaseClient';
-import intakeSurveySchema from './intake-survey-questions.json';
 import { useRouter } from 'next/navigation';
 
 type Question = {
@@ -13,7 +12,7 @@ type Question = {
   required?: boolean;
   min?: number;
   max?: number;
-  showFollowUp?: (value: any) => boolean;
+  showFollowUp?: (value: unknown) => boolean;
   followUp?: Omit<Question, 'isFollowUp'>;
   isFollowUp?: boolean;
   fields?: Question[];
@@ -39,7 +38,7 @@ const questions: Question[] = [
       { label: 'No', value: 'No' },
     ],
     required: true,
-    showFollowUp: (value: any) => value === 'Yes',
+    showFollowUp: (value: unknown) => value === 'Yes',
     followUp: {
       key: 'painDescription',
       title: 'Please describe your pain or injury:',
@@ -219,7 +218,7 @@ const questions: Question[] = [
 ];
 
 const SurveyPage = () => {
-  const [formData, setFormData] = useState<Record<string, any>>({});
+  const [formData, setFormData] = useState<Record<string, unknown | Record<string, unknown>>>({});
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
@@ -275,7 +274,7 @@ const SurveyPage = () => {
     fetchUserAndData();
   }, [router]);
 
-  const handleChange = (value: any) => {
+  const handleChange = (value: unknown) => {
     setFormData(prev => ({
       ...prev,
       [currentQuestion.key]: value
@@ -324,12 +323,16 @@ const SurveyPage = () => {
   const renderInput = (question = currentQuestion, groupKey?: string) => {
     const getValue = (key: string) => {
       if (groupKey) {
-        return formData[groupKey]?.[key] ?? '';
+        const group = formData[groupKey];
+        if (group && typeof group === 'object' && group !== null && !Array.isArray(group)) {
+          return (group as Record<string, unknown>)[key] ?? '';
+        }
+        return '';
       }
       return formData[question.key] ?? '';
     };
     
-    const handleGroupChange = (key: string, value: any) => {
+    const handleGroupChange = (key: string, value: unknown) => {
       setFormData(prev => ({
         ...prev,
         [groupKey!]: {
@@ -341,7 +344,7 @@ const SurveyPage = () => {
     
     const value = getValue(question.key);
     const handleChangeFn = groupKey 
-      ? (val: any) => handleGroupChange(question.key, val)
+      ? (val: unknown) => handleGroupChange(question.key, val)
       : handleChange;
     
     // Handle group question type
@@ -382,7 +385,7 @@ const SurveyPage = () => {
       case 'select':
         return (
           <select
-            value={value}
+            value={typeof value === 'string' || typeof value === 'number' ? value : ''}
             onChange={(e) => handleChangeFn(e.target.value)}
             className="w-full p-2 border rounded"
             required={question.required}
@@ -423,7 +426,7 @@ const SurveyPage = () => {
         return (
           <input
             type="number"
-            value={value || ''}
+            value={typeof value === 'number' ? value : value === '' ? '' : Number(value) || ''}
             onChange={(e) => handleChangeFn(Number(e.target.value))}
             className="w-full p-2 border rounded"
             min={question.min}
@@ -435,7 +438,7 @@ const SurveyPage = () => {
       case 'text':
         return (
           <textarea
-            value={value || ''}
+            value={typeof value === 'string' ? value : ''}
             onChange={(e) => handleChangeFn(e.target.value)}
             className="w-full p-2 border rounded"
             rows={3}

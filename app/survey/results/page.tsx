@@ -5,17 +5,16 @@ import { getSurveyResponse } from "../../../utils/surveyResponses";
 import { getLatestAssessment, generateAndStoreAssessment } from "../../../utils/assessments";
 import AssessmentChat from "../../../components/AssessmentChat";
 import intakeSurveySchema from "../intake-survey-questions.json";
-import { supabase } from "../../../utils/supabaseClient";
 
-function formatAnswer(key: string, value: any, schema: any): React.ReactNode {
+function formatAnswer(key: string, value: unknown, schema: Record<string, unknown>): React.ReactNode {
   // Handle time commitment object
-  if (key === 'timeCommitment' && value && typeof value === 'object') {
+  if (key === 'timeCommitment' && value && typeof value === 'object' && value !== null &&
+      'daysPerWeek' in value && 'minutesPerSession' in value && 'preferredTimeOfDay' in value) {
+    const tc = value as { daysPerWeek: number; minutesPerSession: number; preferredTimeOfDay: string };
     return (
-      <div className="ml-4 space-y-1">
-        <div>Days per week: {value.daysPerWeek || 'Not specified'}</div>
-        <div>Minutes per session: {value.minutesPerSession || 'Not specified'}</div>
-        <div>Preferred time: {value.preferredTimeOfDay || 'Not specified'}</div>
-      </div>
+      <span>
+        {tc.daysPerWeek} days/week, {tc.minutesPerSession} min/session, Preferred: {tc.preferredTimeOfDay}
+      </span>
     );
   }
   
@@ -24,10 +23,33 @@ function formatAnswer(key: string, value: any, schema: any): React.ReactNode {
     return value.length > 0 ? value.join(', ') : 'None';
   }
   
-  // Handle enum values
-  if (schema[key]?.enum) {
-    const label = schema[key].enumNames?.[schema[key].enum.indexOf(value)] ?? value;
-    return <span>{label || 'Not specified'}</span>;
+  // Handle enums (single and multiple choice)
+  // Handle enums (single and multiple choice)
+  if (
+    schema &&
+    typeof schema === 'object' &&
+    'enum' in schema &&
+    Array.isArray((schema as { enum: unknown }).enum)
+  ) {
+    const enumArray = (schema as { enum: unknown[] }).enum;
+    const enumNames = 'enumNames' in schema && Array.isArray((schema as { enumNames: unknown[] }).enumNames)
+      ? (schema as { enumNames: string[] }).enumNames
+      : undefined;
+    if (Array.isArray(value)) {
+      return (
+        <span>
+          {value
+            .map((v: string) => {
+              const idx = enumArray.indexOf(v);
+              return enumNames ? enumNames[idx] : v;
+            })
+            .join(', ')}
+        </span>
+      );
+    } else {
+      const idx = enumArray.indexOf(value);
+      return <span>{enumNames ? String(enumNames[idx]) : String(value)}</span>;
+    }
   }
   
   // Handle boolean values
@@ -40,18 +62,17 @@ function formatAnswer(key: string, value: any, schema: any): React.ReactNode {
 }
 
 const SurveyResultsPage = () => {
-  const [response, setResponse] = useState<any>(null);
+  const [response, setResponse] = useState<Record<string, unknown> | null>(null);
   const [assessment, setAssessment] = useState<string | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [user, setUser] = useState<any>(null);
-  const [authLoading, setAuthLoading] = useState(true);
+  const [user, setUser] = useState<{ id: string } | null>(null);
   const router = useRouter();
 
   useEffect(() => {
     const checkAuthAndFetchData = async () => {
-      setAuthLoading(true);
+      setLoading(true);
       try {
         const { data: { user } } = await import("@/utils/supabaseClient").then(m => m.supabase.auth.getUser());
         
@@ -62,9 +83,17 @@ const SurveyResultsPage = () => {
         
         setUser(user);
         
-        // Only fetch survey data if we have a valid user
+        <div>Can&apos;t find your survey data? Try refreshing the page or contact support.</div>
         setLoading(true);
         setError(null);
+        
+        if (!user) {
+          return (
+            <div className="flex items-center justify-center h-64">
+              <span className="text-gray-500">User not found. Please log in again.</span>
+            </div>
+          );
+        }
         
         try {
           // Fetch survey response
@@ -102,20 +131,16 @@ const SurveyResultsPage = () => {
         router.replace("/login?error=auth");
       } finally {
         setLoading(false);
-        setAuthLoading(false);
       }
     };
     
     checkAuthAndFetchData();
   }, [router]);
 
-  const isComplete = response &&
-    intakeSurveySchema.required.every((key: string) => response[key] !== undefined && response[key] !== "");
-
-  if (loading || authLoading) {
+  if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-lg">Loading your results...</div>
+      <div className="flex items-center justify-center h-64">
+        <span className="text-gray-500">Loading...</span>
       </div>
     );
   }
@@ -151,11 +176,11 @@ const SurveyResultsPage = () => {
           <div className="bg-white p-6 rounded-lg shadow">
             <h2 className="text-xl font-semibold mb-4">Your Responses</h2>
             <div className="space-y-4">
-              {Object.entries(intakeSurveySchema.properties).map(([key, config]: [string, any]) => (
+              {Object.entries(intakeSurveySchema.properties).map(([key, config]: [string, Record<string, unknown>]) => (
                 <div key={key} className="border-b pb-2">
-                  <span className="font-medium">{config.title}:</span>{" "}
+                  <span className="font-medium">{String(config.title)}:</span>{" "}
                   <span className="text-gray-700">
-                    {formatAnswer(key, response[key], intakeSurveySchema.properties)}
+                    {formatAnswer(key, response[key] as unknown, intakeSurveySchema.properties)}
                   </span>
                 </div>
               ))}
@@ -181,14 +206,14 @@ const SurveyResultsPage = () => {
                   <div className="text-center py-4">
                     <p className="text-gray-600">Generating your assessment...</p>
                   </div>
-                ) : (
-                  <AssessmentChat 
-                    initialAssessment={assessment} 
-                    surveyResponses={response} 
+                ) : user ? (
+                  <AssessmentChat
+                    initialAssessment={assessment}
+                    surveyResponses={response}
                     userId={user.id}
                     onAssessmentUpdate={(newAssessment: string) => setAssessment(newAssessment)}
                   />
-                )}
+                ) : null}
               </div>
             ) : (
               <div className="text-center py-8">
