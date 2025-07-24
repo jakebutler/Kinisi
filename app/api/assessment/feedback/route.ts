@@ -44,8 +44,7 @@ export async function POST(req: NextRequest) {
 
     let assessmentResult;
     let assessmentError;
-    let revisedAssessmentId;
-
+    
     // 4. Insert or Update assessment based on revisionOfAssessmentId
     const dataToSave = {
         user_id: userId,
@@ -71,10 +70,6 @@ export async function POST(req: NextRequest) {
 
         assessmentResult = data;
         assessmentError = error;
-        if (assessmentResult) {
-             revisedAssessmentId = assessmentResult.id;
-        }
-
 
     } else {
         // Insert new assessment
@@ -92,9 +87,7 @@ export async function POST(req: NextRequest) {
 
         assessmentResult = data;
         assessmentError = error;
-         if (assessmentResult) {
-             revisedAssessmentId = assessmentResult.id;
-        }
+         
     }
 
     // 5. Handle DB operation result

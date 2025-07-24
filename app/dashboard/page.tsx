@@ -10,14 +10,16 @@ import intakeSurveySchema from '../survey/intake-survey-questions.json';
 import { useAuth } from "@/components/context/AuthContext";
 
 // Helper function to format survey answers for display
-function formatAnswer(key: string, value: any, schema: any): React.ReactNode {
+function formatAnswer(key: string, value: unknown, schema: Record<string, unknown>): React.ReactNode {
   // Handle time commitment object
-  if (key === 'timeCommitment' && value && typeof value === 'object') {
+  if (key === 'timeCommitment' && value && typeof value === 'object' && value !== null &&
+      'daysPerWeek' in value && 'minutesPerSession' in value && 'preferredTimeOfDay' in value) {
+    const tc = value as { daysPerWeek: number; minutesPerSession: number; preferredTimeOfDay: string };
     return (
       <div className="ml-4 space-y-1">
-        <div>Days per week: {value.daysPerWeek || 'Not specified'}</div>
-        <div>Minutes per session: {value.minutesPerSession || 'Not specified'}</div>
-        <div>Preferred time: {value.preferredTimeOfDay || 'Not specified'}</div>
+        <div>Can&apos;t find your survey data? Try refreshing the page or contact support.</div>
+        <div>Minutes per session: {tc.minutesPerSession || 'Not specified'}</div>
+        <div>Preferred time: {tc.preferredTimeOfDay || 'Not specified'}</div>
       </div>
     );
   }
@@ -27,10 +29,33 @@ function formatAnswer(key: string, value: any, schema: any): React.ReactNode {
     return value.length > 0 ? value.join(', ') : 'None';
   }
   
-  // Handle enum values
-  if (schema[key]?.enum) {
-    const label = schema[key].enumNames?.[schema[key].enum.indexOf(value)] ?? value;
-    return <span>{label || 'Not specified'}</span>;
+  // Handle enums (single and multiple choice)
+  // Handle enums (single and multiple choice)
+  if (
+    schema &&
+    typeof schema === 'object' &&
+    'enum' in schema &&
+    Array.isArray((schema as { enum: unknown }).enum)
+  ) {
+    const enumArray = (schema as { enum: unknown[] }).enum;
+    const enumNames = 'enumNames' in schema && Array.isArray((schema as { enumNames: unknown[] }).enumNames)
+      ? (schema as { enumNames: string[] }).enumNames
+      : undefined;
+    if (Array.isArray(value)) {
+      return (
+        <span>
+          {value
+            .map((v: string) => {
+              const idx = enumArray.indexOf(v);
+              return enumNames ? String(enumNames[idx]) : String(v);
+            })
+            .join(', ')}
+        </span>
+      );
+    } else {
+      const idx = enumArray.indexOf(value);
+      return <span>{enumNames ? String(enumNames[idx]) : String(value)}</span>;
+    }
   }
   
   // Handle boolean values
@@ -47,7 +72,7 @@ export default function DashboardPage() {
   const router = useRouter();
   const [isCheckingSurvey, setIsCheckingSurvey] = useState(true);
   const [surveyCompleted, setSurveyCompleted] = useState(false);
-  const [surveyResponse, setSurveyResponse] = useState<any>(null);
+  const [surveyResponse, setSurveyResponse] = useState<Record<string, unknown> | null>(null);
   const [assessment, setAssessment] = useState<string | null>(null);
   const [assessmentApproved, setAssessmentApproved] = useState(false);
   const [isGeneratingAssessment, setIsGeneratingAssessment] = useState(false);
@@ -183,7 +208,7 @@ export default function DashboardPage() {
               <div className="max-h-96 overflow-y-auto pr-2">
                 <div className="space-y-4">
                   {Object.entries(surveyResponse).map(([key, value]) => {
-                    const questionProperty = (intakeSurveySchema.properties as any)?.[key];
+                    const questionProperty = (intakeSurveySchema.properties as Record<string, { title?: string }>)[key];
                     const questionTitle = questionProperty?.title || key;
                     
                     return (
@@ -268,7 +293,7 @@ export default function DashboardPage() {
                       </svg>
                       <span className="text-green-800 font-medium">Assessment Approved!</span>
                     </div>
-                    <p className="text-green-700 mt-2">You're ready to begin your personalized fitness journey.</p>
+                    <p className="text-green-700 mt-2">You&apos;re ready to begin your personalized fitness journey.</p>
                   </div>
                 )}
               </div>

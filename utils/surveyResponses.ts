@@ -16,7 +16,7 @@ export async function upsertSurveyResponse(userId: string, response: any) {
     .from('survey_responses')
     .upsert([
       { user_id: userId, response }
-    ], { onConflict: ['id'] })
+    ], { onConflict: 'id' })
     .select();
   return { data, error };
 }
