@@ -1,18 +1,17 @@
 # Label PRs that touch certain files or folders
 
 api:
-  - patterns:
-      - "app/api/**"
-      - "utils/**"
+  - "app/api/**"
+  - "utils/**"
+
 frontend:
-  - patterns:
-      - "components/**"
-      - "app/**/*.tsx"
-      - "app/**/*.ts"
+  - "components/**"
+  - "app/**/*.tsx"
+  - "app/**/*.ts"
+
 test:
-  - patterns:
-      - "__tests__/**"
+  - "__tests__/**"
+
 documentation:
-  - patterns:
-      - "docs/**"
-      - "**/*.md"
+  - "docs/**"
+  - "**/*.md"
