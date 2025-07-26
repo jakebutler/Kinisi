@@ -1,6 +1,7 @@
 // Unit tests for AuthContext component
 import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
+import '@testing-library/jest-dom';
 import { AuthProvider, useAuth } from '../../../components/context/AuthContext';
 import { supabase } from '../../../utils/supabaseClient';
 import { getPostLoginRedirect } from '../../../utils/userFlow';
@@ -32,6 +33,11 @@ jest.mock('next/navigation', () => ({
 }));
 
 const mockSupabase = supabase as jest.Mocked<typeof supabase>;
+
+// Helper to cast auth methods to jest.Mock for TS
+const getSessionMock = mockSupabase.auth.getSession as unknown as jest.Mock;
+const onAuthStateChangeMock = mockSupabase.auth.onAuthStateChange as unknown as jest.Mock;
+const signOutMock = mockSupabase.auth.signOut as unknown as jest.Mock;
 const mockGetPostLoginRedirect = getPostLoginRedirect as jest.MockedFunction<typeof getPostLoginRedirect>;
 
 // Test component to access auth context
@@ -65,8 +71,8 @@ describe('AuthContext', () => {
   });
 
   describe('initialization', () => {
-    it('should start in loading state', () => {
-      mockSupabase.auth.getSession.mockResolvedValue({
+    it('should start in loading state', async () => {
+      getSessionMock.mockResolvedValue({
         data: { session: null },
         error: null
       });
@@ -76,40 +82,46 @@ describe('AuthContext', () => {
           <TestComponent />
         </AuthProvider>
       );
-
-      expect(screen.getByTestId('loading')).toHaveTextContent('loading');
+      // Wait for loaded state
+      await waitFor(() => {
+        expect(screen.getByTestId('loading')).toHaveTextContent('loaded');
+      });
     });
 
     it('should load existing session on mount', async () => {
-      mockSupabase.auth.getSession.mockResolvedValue({
+      getSessionMock.mockResolvedValue({
         data: { session: mockSession },
         error: null
       });
 
-      render(
-        <AuthProvider>
-          <TestComponent />
-        </AuthProvider>
-      );
+      await act(async () => {
+        render(
+          <AuthProvider>
+            <TestComponent />
+          </AuthProvider>
+        );
+      });
 
       await waitFor(() => {
         expect(screen.getByTestId('loading')).toHaveTextContent('loaded');
-        expect(screen.getByTestId('user')).toHaveTextContent(mockUser.email);
+        expect(screen.getByTestId('user')).toHaveTextContent(mockUser.email ?? '');
         expect(screen.getByTestId('session')).toHaveTextContent('has session');
       });
     });
 
     it('should handle no existing session', async () => {
-      mockSupabase.auth.getSession.mockResolvedValue({
+      getSessionMock.mockResolvedValue({
         data: { session: null },
         error: null
       });
 
-      render(
-        <AuthProvider>
-          <TestComponent />
-        </AuthProvider>
-      );
+      await act(async () => {
+        render(
+          <AuthProvider>
+            <TestComponent />
+          </AuthProvider>
+        );
+      });
 
       await waitFor(() => {
         expect(screen.getByTestId('loading')).toHaveTextContent('loaded');
@@ -121,11 +133,10 @@ describe('AuthContext', () => {
 
   describe('authentication state changes', () => {
     it('should handle SIGNED_IN event with post-login redirect', async () => {
-      mockSupabase.auth.getSession.mockResolvedValue({
+      getSessionMock.mockResolvedValueOnce({
         data: { session: null },
         error: null
       });
-
       mockGetPostLoginRedirect.mockResolvedValue('/dashboard');
 
       render(
@@ -140,7 +151,13 @@ describe('AuthContext', () => {
       });
 
       // Get the callback function passed to onAuthStateChange
-      const authStateChangeCallback = mockSupabase.auth.onAuthStateChange.mock.calls[0][0];
+      const authStateChangeCallback = onAuthStateChangeMock.mock.calls[0][0];
+
+      // After SIGNED_IN, session should be present
+      getSessionMock.mockResolvedValueOnce({
+        data: { session: mockSession },
+        error: null
+      });
 
       // Simulate SIGNED_IN event
       await act(async () => {
@@ -148,7 +165,7 @@ describe('AuthContext', () => {
       });
 
       await waitFor(() => {
-        expect(screen.getByTestId('user')).toHaveTextContent(mockUser.email);
+        expect(screen.getByTestId('user')).toHaveTextContent(mockUser.email ?? '');
         expect(screen.getByTestId('session')).toHaveTextContent('has session');
         expect(mockGetPostLoginRedirect).toHaveBeenCalledWith(mockUser.id);
         expect(mockPush).toHaveBeenCalledWith('/dashboard');
@@ -160,22 +177,24 @@ describe('AuthContext', () => {
       mockUsePathname.mockReturnValue('/login');
       mockGetPostLoginRedirect.mockResolvedValue('/dashboard');
 
-      mockSupabase.auth.getSession.mockResolvedValue({
+      getSessionMock.mockResolvedValue({
         data: { session: null },
         error: null
       });
 
-      render(
-        <AuthProvider>
-          <TestComponent />
-        </AuthProvider>
-      );
+      await act(async () => {
+        render(
+          <AuthProvider>
+            <TestComponent />
+          </AuthProvider>
+        );
+      });
 
       await waitFor(() => {
         expect(screen.getByTestId('loading')).toHaveTextContent('loaded');
       });
 
-      const authStateChangeCallback = mockSupabase.auth.onAuthStateChange.mock.calls[0][0];
+      const authStateChangeCallback = onAuthStateChangeMock.mock.calls[0][0];
 
       await act(async () => {
         await authStateChangeCallback('SIGNED_IN', mockSession);
@@ -191,22 +210,24 @@ describe('AuthContext', () => {
       // Mock pathname to be dashboard page
       mockUsePathname.mockReturnValue('/dashboard');
 
-      mockSupabase.auth.getSession.mockResolvedValue({
+      getSessionMock.mockResolvedValue({
         data: { session: null },
         error: null
       });
 
-      render(
-        <AuthProvider>
-          <TestComponent />
-        </AuthProvider>
-      );
+      await act(async () => {
+        render(
+          <AuthProvider>
+            <TestComponent />
+          </AuthProvider>
+        );
+      });
 
       await waitFor(() => {
         expect(screen.getByTestId('loading')).toHaveTextContent('loaded');
       });
 
-      const authStateChangeCallback = mockSupabase.auth.onAuthStateChange.mock.calls[0][0];
+      const authStateChangeCallback = onAuthStateChangeMock.mock.calls[0][0];
 
       await act(async () => {
         await authStateChangeCallback('SIGNED_IN', mockSession);
@@ -217,7 +238,7 @@ describe('AuthContext', () => {
     });
 
     it('should handle SIGNED_OUT event', async () => {
-      mockSupabase.auth.getSession.mockResolvedValue({
+      getSessionMock.mockResolvedValueOnce({
         data: { session: mockSession },
         error: null
       });
@@ -229,10 +250,16 @@ describe('AuthContext', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('user')).toHaveTextContent(mockUser.email);
+        expect(screen.getByTestId('user')).toHaveTextContent(mockUser.email ?? '');
       });
 
-      const authStateChangeCallback = mockSupabase.auth.onAuthStateChange.mock.calls[0][0];
+      const authStateChangeCallback = onAuthStateChangeMock.mock.calls[0][0];
+
+      // After SIGNED_OUT, session should be null
+      getSessionMock.mockResolvedValueOnce({
+        data: { session: null },
+        error: null
+      });
 
       await act(async () => {
         await authStateChangeCallback('SIGNED_OUT', null);
@@ -247,12 +274,12 @@ describe('AuthContext', () => {
 
   describe('signOut function', () => {
     it('should call supabase signOut when signOut is called', async () => {
-      mockSupabase.auth.getSession.mockResolvedValue({
+      getSessionMock.mockResolvedValue({
         data: { session: mockSession },
         error: null
       });
 
-      mockSupabase.auth.signOut.mockResolvedValue({ error: null });
+      signOutMock.mockResolvedValue({ error: null });
 
       render(
         <AuthProvider>
@@ -261,7 +288,7 @@ describe('AuthContext', () => {
       );
 
       await waitFor(() => {
-        expect(screen.getByTestId('user')).toHaveTextContent(mockUser.email);
+        expect(screen.getByTestId('user')).toHaveTextContent(mockUser.email ?? '');
       });
 
       const signOutButton = screen.getByTestId('signout');
@@ -270,13 +297,13 @@ describe('AuthContext', () => {
         signOutButton.click();
       });
 
-      expect(mockSupabase.auth.signOut).toHaveBeenCalled();
+      expect(signOutMock).toHaveBeenCalled();
     });
   });
 
   describe('error handling', () => {
     it('should handle getSession errors gracefully', async () => {
-      mockSupabase.auth.getSession.mockResolvedValue({
+      getSessionMock.mockResolvedValue({
         data: { session: null },
         error: new Error('Session error')
       });
@@ -294,11 +321,11 @@ describe('AuthContext', () => {
     });
 
     it('should handle post-login redirect errors', async () => {
-      mockSupabase.auth.getSession.mockResolvedValue({
+      // Initial session is null
+      getSessionMock.mockResolvedValueOnce({
         data: { session: null },
         error: null
       });
-
       mockGetPostLoginRedirect.mockRejectedValue(new Error('Redirect error'));
 
       render(
@@ -311,7 +338,14 @@ describe('AuthContext', () => {
         expect(screen.getByTestId('loading')).toHaveTextContent('loaded');
       });
 
-      const authStateChangeCallback = mockSupabase.auth.onAuthStateChange.mock.calls[0][0];
+      // Get the callback function passed to onAuthStateChange
+      const authStateChangeCallback = onAuthStateChangeMock.mock.calls[0][0];
+
+      // After SIGNED_IN, session should be present
+      getSessionMock.mockResolvedValueOnce({
+        data: { session: mockSession },
+        error: null
+      });
 
       await act(async () => {
         await authStateChangeCallback('SIGNED_IN', mockSession);
@@ -319,7 +353,7 @@ describe('AuthContext', () => {
 
       // Should still update auth state even if redirect fails
       await waitFor(() => {
-        expect(screen.getByTestId('user')).toHaveTextContent(mockUser.email);
+        expect(screen.getByTestId('user')).toHaveTextContent(mockUser.email ?? '');
       });
     });
   });
