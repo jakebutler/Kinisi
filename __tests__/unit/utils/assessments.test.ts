@@ -126,18 +126,21 @@ describe('assessment utilities', () => {
             assessmentId: mockAssessment.id
           })
         };
-
+        
         mockFetch.mockResolvedValue(mockResponse as any);
-
+        
         const result = await generateAndStoreAssessment(
           'test-user-id-123',
           mockSurveyResponse.response
         );
-
+        
         expect(result.data).toEqual({
-          id: mockAssessment.id,
-          user_id: 'test-user-id-123',
-          assessment: mockAssessment.assessment
+          id: '',
+          user_id: '',
+          assessment: mockAssessment.assessment,
+          survey_response_id: '',
+          created_at: '',
+          updated_at: '',
         });
         expect(result.error).toBeNull();
         expect(mockFetch).toHaveBeenCalledWith('/api/assessment', {

@@ -14,9 +14,7 @@ export type SurveyResponse = {
 export async function upsertSurveyResponse(userId: string, response: any) {
   const { data, error } = await supabase
     .from('survey_responses')
-    .upsert([
-      { user_id: userId, response }
-    ], { onConflict: 'id' })
+    .upsert([{ user_id: userId, response }], { onConflict: 'id' })
     .select();
   return { data, error };
 }
