@@ -1,3 +1,51 @@
+// Polyfill global Request and Response for Node.js test environment
+if (typeof global.Request === 'undefined') {
+  global.Request = class {
+    constructor(input: any, init: any) {
+      (this as any).input = input;
+      (this as any).init = init;
+    }
+  } as any;
+}
+if (typeof global.Response === 'undefined') {
+// Polyfill NextResponse to avoid getSetCookie errors in Node.js test environment
+jest.mock('next/server', () => {
+  const actual = jest.requireActual('next/server');
+  // Provide a minimal mock for NextResponse.json that avoids cookie logic
+  return {
+    ...actual,
+    NextResponse: {
+      json: (data: any, init: any) => {
+        // Always return a plain object with status, ok, json, and text methods for test compatibility
+        const status = (init && init.status) || 200;
+        return {
+          status,
+          ok: status >= 200 && status < 300,
+          async json() { return data; },
+          async text() { return JSON.stringify(data); },
+        };
+      },
+    },
+  };
+});
+  global.Response = class {
+    constructor(body: any, init: any) {
+      (this as any).body = body;
+      (this as any).init = init;
+    }
+    static json(data: any, init: any) {
+      return new (global as any).Response(JSON.stringify(data), init);
+    }
+    static redirect(url: any, status: any) {
+      return new (global as any).Response(null, { status, headers: { Location: url } });
+    }
+    static error() {
+      return new (global as any).Response(null, { status: 500 });
+    }
+  } as any;
+}
+
+// ...existing code...
 // Import necessary testing utilities
 import { NextRequest, NextResponse } from 'next/server';
 
@@ -5,7 +53,7 @@ import { NextRequest, NextResponse } from 'next/server';
 jest.mock('../utils/assessmentChain', () => ({
   reviseAssessmentWithFeedback: jest.fn(),
 }));
-import { reviseAssessmentWithFeedback } from '../utils/assessmentChain';
+import * as assessmentChain from '../utils/assessmentChain';
 
 // --- Refined Supabase Mock Setup ---
 jest.mock('../utils/supabaseClient', () => ({
@@ -142,7 +190,7 @@ describe('/api/assessment/feedback', () => {
   // Use global it
   it('returns 400 if required fields are missing', async () => {
     // No revision is attempted if fields are missing
-    reviseAssessmentWithFeedback.mockResolvedValue('SHOULD NOT BE CALLED');
+    (assessmentChain.reviseAssessmentWithFeedback as jest.Mock).mockResolvedValue('SHOULD NOT BE CALLED');
 
     // Create a request missing 'feedback', 'surveyResponses', 'currentAssessment'
     const mockReq = createMockRequest({ userId: 'user-1' });
@@ -154,7 +202,7 @@ describe('/api/assessment/feedback', () => {
 
     // No database or external API calls should occur
     expect(supabase.from).not.toHaveBeenCalled();
-    expect(reviseAssessmentWithFeedback).not.toHaveBeenCalled();
+    expect(assessmentChain.reviseAssessmentWithFeedback).not.toHaveBeenCalled();
     expect(mockSingle).not.toHaveBeenCalled();
     expect(mockMaybeSingle).not.toHaveBeenCalled();
   });
@@ -168,7 +216,7 @@ describe('/api/assessment/feedback', () => {
     mockMaybeSingle.mockResolvedValueOnce({ data: null, error: null });
 
     // Revision should NOT be called if survey is not found
-    reviseAssessmentWithFeedback.mockResolvedValue('SHOULD NOT BE CALLED');
+    (assessmentChain.reviseAssessmentWithFeedback as jest.Mock).mockResolvedValue('SHOULD NOT BE CALLED');
 
     const mockReq = createMockRequest({ currentAssessment: 'Initial Assessment', feedback: 'Revise please', surveyResponses: {}, userId: 'user-1' });
     const response = await handlerPOST(mockReq);
@@ -213,7 +261,7 @@ describe('/api/assessment/feedback', () => {
 
 
     expect(supabase.from).not.toHaveBeenCalledWith('assessments'); // No assessments interaction if survey not found
-    expect(reviseAssessmentWithFeedback).not.toHaveBeenCalled(); // Revision should not happen
+    expect(assessmentChain.reviseAssessmentWithFeedback).not.toHaveBeenCalled(); // Revision should not happen
   });
 
     // Test for DB error during survey lookup
@@ -226,7 +274,7 @@ describe('/api/assessment/feedback', () => {
 
 
         // Revision should NOT be called if DB error occurs
-        reviseAssessmentWithFeedback.mockResolvedValue('SHOULD NOT BE CALLED');
+    (assessmentChain.reviseAssessmentWithFeedback as jest.Mock).mockResolvedValue('SHOULD NOT BE CALLED');
 
         const mockReq = createMockRequest({ currentAssessment: 'Initial Assessment', feedback: 'Revise please', surveyResponses: {}, userId: 'user-1' });
         const response = await handlerPOST(mockReq);
@@ -267,7 +315,7 @@ describe('/api/assessment/feedback', () => {
 
 
         expect(supabase.from).not.toHaveBeenCalledWith('assessments'); // No assessments interaction
-        expect(reviseAssessmentWithFeedback).not.toHaveBeenCalled(); // Revision should not happen
+    expect(assessmentChain.reviseAssessmentWithFeedback).not.toHaveBeenCalled(); // Revision should not happen
     });
 
 
@@ -286,7 +334,7 @@ describe('/api/assessment/feedback', () => {
        mockSingle.mockResolvedValueOnce('SHOULD NOT BE CALLED');
 
 
-       reviseAssessmentWithFeedback.mockResolvedValue('SUCCESSFUL REVISED TEXT');
+       (assessmentChain.reviseAssessmentWithFeedback as jest.Mock).mockResolvedValue('SUCCESSFUL REVISED TEXT');
        const mockReq = createMockRequest({ currentAssessment: 'Initial Assessment', feedback: 'Revise please', surveyResponses: {}, userId: 'user-1', revisionOfAssessmentId: 'assessment-1' });
        const response = await handlerPOST(mockReq);
 
@@ -332,7 +380,7 @@ describe('/api/assessment/feedback', () => {
 
 
        expect(assessmentsFromCall?.insert).not.toHaveBeenCalled(); // Insert should not happen in update path
-       expect(reviseAssessmentWithFeedback).toHaveBeenCalledTimes(1); // Revision should happen before DB op
+       expect(assessmentChain.reviseAssessmentWithFeedback).toHaveBeenCalledTimes(1); // Revision should happen before DB op
      });
 
 
@@ -342,7 +390,7 @@ describe('/api/assessment/feedback', () => {
      mockMaybeSingle.mockResolvedValueOnce({ data: { id: 'survey-1', response: {} }, error: null });
 
      const mockRevisedText = 'This is the mocked revised assessment text.';
-     reviseAssessmentWithFeedback.mockResolvedValue(mockRevisedText);
+     (assessmentChain.reviseAssessmentWithFeedback as jest.Mock).mockResolvedValue(mockRevisedText);
      const mockUpdatedAssessmentId = 'mock-updated-assessment-id';
 
      // Handler uses update()...select().single() for the assessment update (2nd call)
@@ -373,7 +421,7 @@ describe('/api/assessment/feedback', () => {
      expect(data).toHaveProperty('assessmentId', mockUpdatedAssessmentId);
 
      // Assert reviseAssessmentWithFeedback was called with correct arguments
-     expect(reviseAssessmentWithFeedback).toHaveBeenCalledWith({
+     expect(assessmentChain.reviseAssessmentWithFeedback).toHaveBeenCalledWith({
        currentAssessment: 'Initial Assessment',
        feedback: 'Revise please',
        surveyResponses: {},
@@ -413,7 +461,7 @@ describe('/api/assessment/feedback', () => {
 
 
      expect(assessmentsFromCall?.insert).not.toHaveBeenCalled();
-     expect(reviseAssessmentWithFeedback).toHaveBeenCalledTimes(1);
+     expect(assessmentChain.reviseAssessmentWithFeedback).toHaveBeenCalledTimes(1);
    });
 
     // Test for DB error during insert
@@ -424,7 +472,7 @@ describe('/api/assessment/feedback', () => {
         mockMaybeSingle.mockResolvedValueOnce({ data: { id: 'survey-1', response: {} }, error: null });
 
         const mockRevisedText = 'This is the mocked revised assessment text.';
-        reviseAssessmentWithFeedback.mockResolvedValue(mockRevisedText);
+        (assessmentChain.reviseAssessmentWithFeedback as jest.Mock).mockResolvedValue(mockRevisedText);
 
         // Handler uses insert()...select().single() for the assessment insert (2nd call)
         // Configure mockSingle to fail for the SECOND DB call.
@@ -479,7 +527,7 @@ describe('/api/assessment/feedback', () => {
 
 
         expect(assessmentsFromCall?.update).not.toHaveBeenCalled(); // Update should not happen in insert path
-        expect(reviseAssessmentWithFeedback).toHaveBeenCalledTimes(1); // Revision should happen before DB op
+        expect(assessmentChain.reviseAssessmentWithFeedback).toHaveBeenCalledTimes(1); // Revision should happen before DB op
     });
 
 
@@ -489,7 +537,7 @@ describe('/api/assessment/feedback', () => {
         mockMaybeSingle.mockResolvedValueOnce({ data: { id: 'survey-1', response: {} }, error: null });
 
         const mockRevisedText = 'This is the mocked revised assessment text.';
-        reviseAssessmentWithFeedback.mockResolvedValue(mockRevisedText);
+        (assessmentChain.reviseAssessmentWithFeedback as jest.Mock).mockResolvedValue(mockRevisedText);
         const mockInsertedAssessmentId = 'mock-new-assessment-id-from-insert';
 
         // Handler uses insert()...select().single() for the assessment insert (2nd call)
@@ -521,7 +569,7 @@ describe('/api/assessment/feedback', () => {
 
 
         // Assert reviseAssessmentWithFeedback was called with correct arguments
-        expect(reviseAssessmentWithFeedback).toHaveBeenCalledWith({
+        expect(assessmentChain.reviseAssessmentWithFeedback).toHaveBeenCalledWith({
           currentAssessment: 'Initial Assessment',
           feedback: 'Revise please',
           surveyResponses: {},
@@ -564,6 +612,6 @@ describe('/api/assessment/feedback', () => {
 
 
         expect(assessmentsFromCall?.update).not.toHaveBeenCalled();
-        expect(reviseAssessmentWithFeedback).toHaveBeenCalledTimes(1);
+        expect(assessmentChain.reviseAssessmentWithFeedback).toHaveBeenCalledTimes(1);
       });
 });

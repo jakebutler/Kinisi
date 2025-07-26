@@ -40,7 +40,7 @@ describe('surveyResponses utilities', () => {
         expect(mockSupabase.from).toHaveBeenCalledWith('survey_responses');
         expect(mockChain.upsert).toHaveBeenCalledWith(
           [{ user_id: 'test-user-id-123', response: mockSurveyResponse.response }],
-          { onConflict: ['id'] }
+          { onConflict: 'id' }
         );
         expect(mockChain.select).toHaveBeenCalled();
       });

@@ -1,0 +1,35 @@
+# Configuration for the GitHub Stale Action
+# See: https://github.com/actions/stale
+
+# Number of days of inactivity before an issue or PR becomes stale
+daysUntilStale: 30
+# Number of days of inactivity before a stale issue or PR is closed
+daysUntilClose: 7
+# Comment to post when marking as stale. Set to `false` to disable
+staleComment: >
+  This issue or PR has been automatically marked as stale because it has not had recent activity. It will be closed if no further activity occurs.
+# Comment to post when closing a stale issue or PR. Set to `false` to disable
+closeComment: false
+# Only issues or PRs with these labels will be marked as stale
+onlyLabels:
+  - ''
+# Issues or PRs with these labels will never be considered stale
+exemptLabels:
+  - pinned
+  - security
+  - dependencies
+# Exempt milestones
+exemptMilestones: []
+# Exempt assignees
+exemptAssignees: []
+# Exempt projects
+exemptProjects: []
+# Exempt issue/PR creators
+exemptIssueCreators: []
+exemptPrCreators: []
+# Remove stale label when activity occurs
+removeStaleWhenUpdated: true
+# The label to use when marking as stale
+staleLabel: stale
+# The label to use when closing as stale
+closeLabel: closed

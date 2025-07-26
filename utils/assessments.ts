@@ -1,4 +1,6 @@
 import { supabase } from './supabaseClient';
+import { handleApiError } from './errorHandling';
+import { SurveyResponses } from '../types/supabase.types';
 
 export type Assessment = {
   id: string;
@@ -19,37 +21,38 @@ export async function getLatestAssessment(userId: string): Promise<{ data: Asses
       .order('created_at', { ascending: false })
       .limit(1)
       .single();
-
-    if (error) throw error;
-    return { data, error: null };
-  } catch (error) {
-    console.error('Error fetching assessment:', error);
-    return { data: null, error: error as Error };
+    return handleApiError(data, error);
+  } catch (error: any) {
+    return { data: null, error: error instanceof Error ? error : new Error(error?.message || String(error)) };
   }
 }
 
-export async function generateAndStoreAssessment(userId: string, surveyResponses: any): Promise<{ data: Assessment | null, error: Error | null }> {
+export async function generateAndStoreAssessment(userId: string, surveyResponses: SurveyResponses): Promise<{ data: Assessment | null, error: Error | null }> {
   try {
-    // Call the API to generate and store the assessment
     const response = await fetch('/api/assessment', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        userId,
-        surveyResponses,
-      }),
+      body: JSON.stringify({ userId, surveyResponses }),
     });
 
     if (!response.ok) {
-      throw new Error('Failed to generate assessment');
+      return { data: null, error: new Error('Failed to generate assessment') };
     }
 
-    const { assessment, assessmentId } = await response.json();
-    return { data: { id: assessmentId, user_id: userId, assessment } as Assessment, error: null };
-  } catch (error) {
-    console.error('Error generating assessment:', error);
-    return { data: null, error: error as Error };
+    const result = await response.json();
+    // Ensure all required fields are present in the returned Assessment object
+    const assessment: Assessment = {
+      id: result.id || '',
+      user_id: result.user_id || '',
+      assessment: result.assessment || '',
+      survey_response_id: result.survey_response_id || '',
+      created_at: result.created_at || '',
+      updated_at: result.updated_at || '',
+    };
+    return { data: assessment, error: null };
+  } catch (err) {
+    return { data: null, error: err instanceof Error ? err : new Error('Unknown error') };
   }
 }
