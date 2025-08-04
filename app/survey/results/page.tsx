@@ -238,8 +238,12 @@ const SurveyResultsPage = () => {
                       if (!res.ok) throw new Error(data.error || "Failed to approve assessment");
                       router.push("/dashboard");
                       // Redirect to dashboard after approval
-                    } catch (err: any) {
-                      setError(err.message || "Failed to approve assessment");
+                    } catch (err: unknown) {
+                      if (err instanceof Error) {
+                        setError(err.message || "Failed to approve assessment");
+                      } else {
+                        setError("Failed to approve assessment");
+                      }
                     } finally {
                       setIsGenerating(false);
                     }
