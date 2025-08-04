@@ -220,6 +220,36 @@ const SurveyResultsPage = () => {
                 <p className="text-gray-600">Generating your personalized assessment...</p>
               </div>
             )}
+            {/* Approve Assessment Button - always outside assessment feedback box */}
+            {user && assessment && (
+              <div className="mt-6 flex justify-end">
+                <button
+                  className={`bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed`}
+                  onClick={async () => {
+                    setIsGenerating(true);
+                    setError(null);
+                    try {
+                      const res = await fetch("/api/assessment/approve", {
+                        method: "POST",
+                        headers: { "Content-Type": "application/json" },
+                        body: JSON.stringify({ userId: user.id }),
+                      });
+                      const data = await res.json();
+                      if (!res.ok) throw new Error(data.error || "Failed to approve assessment");
+                      router.push("/dashboard");
+                      // Redirect to dashboard after approval
+                    } catch (err: any) {
+                      setError(err.message || "Failed to approve assessment");
+                    } finally {
+                      setIsGenerating(false);
+                    }
+                  }}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? "Approving..." : "Approve Assessment"}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       )}
