@@ -267,6 +267,8 @@ describe('/api/assessment/feedback', () => {
     // Test for DB error during survey lookup
     // Corrected assertion pattern for the chained calls.
     it('returns 500 if database error occurs during survey lookup', async () => {
+      // Suppress expected error logs
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
         // Handler uses .limit(1).maybeSingle() for the survey lookup.
         // Configure mockMaybeSingle to return an error for the FIRST DB call.
         const mockError = new Error('Mock Supabase survey lookup error');
@@ -286,10 +288,12 @@ describe('/api/assessment/feedback', () => {
 
         // Assert that mockMaybeSingle was called exactly once
         expect(mockMaybeSingle).toHaveBeenCalledTimes(1);
-         expect(mockSingle).not.toHaveBeenCalled();
-
+        expect(mockSingle).not.toHaveBeenCalled();
 
         // Assert the chain calls for survey_responses using the corrected pattern
+
+      // Restore console.error
+      consoleErrorSpy.mockRestore();
         expect(supabase.from).toHaveBeenCalledWith('survey_responses');
          const surveyFromCall = (supabase.from as jest.Mock).mock.results.find(call => call.value.tableName === 'survey_responses')?.value;
          expect(surveyFromCall).toBeDefined();

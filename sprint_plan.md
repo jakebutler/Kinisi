@@ -83,10 +83,10 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 
 ### Testing Criteria:
 
-* [ ] User can register a new account and stay logged in
-* [ ] User can sign in/out successfully
-* [ ] Password reset email is sent and works
-* [ ] Auth state persists across page reload
+* [x] User can register a new account and stay logged in
+* [x] User can sign in/out successfully
+* [x] Password reset email is sent and works
+* [x] Auth state persists across page reload
 * [ ] All views render correctly on mobile
 
 ---
@@ -144,9 +144,9 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 
 ### Testing Criteria:
 
-* [ ] User can complete and submit survey
-* [ ] User responses are stored and visible after refresh
-* [ ] Survey can be edited and resubmitted
+* [x] User can complete and submit survey
+* [x] User responses are stored and visible after refresh
+* [x] Survey can be edited and resubmitted
 * [ ] Survey fields match schema
 
 ---
@@ -211,9 +211,9 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 
 ### Testing Criteria:
 
-* [ ] Personalized Assessment is generated and shown after survey
-* [ ] Chat accepts user input and revises the assessment accordingly
-* [ ] Final assessment is clearly marked as "Approved"
+* [x] Personalized Assessment is generated and shown after survey
+* [x] Chat accepts user input and revises the assessment accordingly
+* [] Final assessment is clearly marked as "Approved"
 * [ ] Edge case: empty/ambiguous feedback is handled gracefully
 
 ---

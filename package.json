@@ -22,8 +22,8 @@
   "devDependencies": {
     "@eslint/eslintrc": "^3",
     "@playwright/test": "^1.52.0",
-    "@stagewise-plugins/react": "latest",
-    "@stagewise/toolbar-next": "latest",
+
+
     "@tailwindcss/postcss": "^4",
     "@testing-library/jest-dom": "^6.6.3",
     "@testing-library/react": "^16.3.0",

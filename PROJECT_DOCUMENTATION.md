@@ -6,9 +6,12 @@ Key features include:
 - User authentication (email/password)
 - A comprehensive intake survey with dynamic form generation
 - AI-generated personalized assessments based on survey responses
-- Custom exercise program generation
-- Session scheduling with calendar integration capabilities (Note: actual integration might be a future feature, the description implies planning for it)
-- Chat-based feedback mechanism for refining exercise programs
+- Chat-based feedback mechanism for refining assessments
+
+**In Progress / Conceptual:**
+- Custom exercise program generation (API endpoint exists, but UI and full workflow are not implemented)
+- Session scheduling and calendar integration (planned, not yet implemented)
+- Full program feedback and revision loop (planned)
 
 ## Technologies Used
 
@@ -24,6 +27,69 @@ Key features include:
     *   *Why*: OpenAI's GPT models are advanced language models capable of generating human-like text, making them suitable for creating personalized assessments from survey data. Langchain is a framework that simplifies the development of applications powered by language models, providing tools and abstractions for managing prompts, chains, and integrations.
 -   **Deployment**: Netlify.
     *   *Why*: Netlify offers a simple and powerful platform for deploying modern web applications, with features like continuous integration/continuous deployment (CI/CD), serverless functions, and easy configuration for Next.js projects.
+
+## Using the Stagewise CLI
+
+Stagewise provides a powerful CLI tool for advanced integration and automation with your development workflow. Below are the most common usage patterns and configuration options. For more details, see the [official Stagewise CLI deep dive](https://stagewise.io/docs/advanced-usage/cli-deep-dive).
+
+### Typical Use Cases
+- **Start Stagewise in the Current Directory:**
+  - Using npm:
+    ```sh
+    npx stagewise
+    ```
+  - Using pnpm:
+    ```sh
+    pnpm dlx stagewise
+    ```
+- **Use a Different (External) Agent:**
+  - Bridge mode allows running with another agent:
+    ```sh
+    npx stagewise -b
+    # or
+    pnpm dlx stagewise -b
+    ```
+- **Start in Another Working Directory:**
+  - Specify the workspace path:
+    ```sh
+    npx stagewise -w ~/projects/my-dev-app
+    # or
+    pnpm dlx stagewise -w ~/projects/my-dev-app
+    ```
+- **Host Stagewise on a Specific Port:**
+  - Default port is 3100, but you can override:
+    ```sh
+    npx stagewise -p 3500
+    # or
+    pnpm dlx stagewise -p 3500
+    ```
+- **Configure the Port for Your Dev App:**
+  - When prompted, enter your dev server port (e.g., 3000). Or override with:
+    ```sh
+    npx stagewise -a 3002
+    # or
+    pnpm dlx stagewise -a 3002
+    ```
+
+### Configuration: stagewise.json
+You can create a `stagewise.json` file in your project root to persist CLI configuration. This file allows you to set default ports, workspace paths, and other behaviors. Example:
+```json
+{
+  "port": 3100,
+  "appPort": 3000,
+  "workspace": "./"
+}
+```
+
+### Authentication Commands
+- `stagewise auth login` – Log in to Stagewise
+- `stagewise auth logout` – Log out
+- `stagewise auth status` – Check authentication status
+
+For a full list of commands and options, run:
+```sh
+npx stagewise --help
+```
 
 ## Directory and File Structure
 
@@ -174,13 +240,13 @@ The Kinisi application guides users through a process of providing information t
     *   The user has the opportunity to review their assessment and provide feedback via a chat-based interface or a dedicated feedback form.
     *   User feedback can trigger a revision process. The `reviseAssessmentWithFeedback` function in `utils/assessmentChain.ts` takes the original assessment, survey data, and user feedback to generate a revised assessment using the LLM. The updated assessment is then stored and displayed.
 
-5.  **Exercise Program Generation (Conceptual - Details may evolve)**:
-    *   Once the user is satisfied with their assessment, the application (or a subsequent process) uses this assessment (and potentially the original survey data) to generate a tailored exercise program.
-    *   (The exact mechanism for program generation, whether LLM-based, rule-based, or a hybrid, would be detailed here as the feature is fully implemented.)
-    *   The program would likely include specific exercises, sets, repetitions, frequency, and potentially instructional videos or descriptions.
+5.  **Exercise Program Generation (Planned/Partial):**
+    *   An API endpoint (`/api/program/generate`) exists as a placeholder for future program generation.
+    *   There is currently no UI or complete workflow for exercise program creation, display, or editing.
+    *   The program generation feature is conceptual and not available to end users yet.
 
-6.  **Scheduling and Engagement**:
-    *   The generated exercise program can be scheduled, possibly integrating with a calendar view within the app.
-    *   Users follow their program, and the app might include features for tracking progress, marking sessions as complete, and providing ongoing motivation.
+6.  **Scheduling and Engagement (Planned):**
+    *   Scheduling and calendar integration are planned features, but are not implemented in the current codebase.
+    *   Users cannot yet schedule or track exercise sessions within the app.
 
-This loop—survey, AI-driven assessment, feedback, and program generation—forms the core of the Kinisi user experience, aiming to provide adaptive and personalized fitness guidance.
+This loop—survey, AI-driven assessment, and feedback—forms the current core of the Kinisi user experience. Program generation and scheduling are planned for future releases.
