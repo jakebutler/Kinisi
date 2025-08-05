@@ -321,6 +321,8 @@ describe('AuthContext', () => {
     });
 
     it('should handle post-login redirect errors', async () => {
+      // Suppress expected error logs
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
       // Initial session is null
       getSessionMock.mockResolvedValueOnce({
         data: { session: null },
@@ -355,6 +357,9 @@ describe('AuthContext', () => {
       await waitFor(() => {
         expect(screen.getByTestId('user')).toHaveTextContent(mockUser.email ?? '');
       });
+
+      // Restore console.error
+      consoleErrorSpy.mockRestore();
     });
   });
 
