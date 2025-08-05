@@ -20,8 +20,13 @@ export async function POST(request: NextRequest) {
       .select();
 
     if (error) {
-      console.error('Error approving assessment:', error);
-      return NextResponse.json({ error: 'Failed to approve assessment' }, { status: 500 });
+      console.error('Supabase error approving assessment:', error);
+      return NextResponse.json({ error: `Supabase error: ${error.message || error}` }, { status: 500 });
+    }
+
+    if (!data || data.length === 0) {
+      console.error(`No assessment found to approve for userId: ${userId}`);
+      return NextResponse.json({ error: 'No assessment found for user' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, data });

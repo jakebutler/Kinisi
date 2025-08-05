@@ -1,10 +1,28 @@
+// Mock the surveyResponses and supabaseClient modules BEFORE any imports
+jest.mock('../../../utils/surveyResponses');
+jest.mock('../../../utils/supabaseClient', () => ({
+  supabase: {
+    from: jest.fn(() => ({
+      select: jest.fn().mockResolvedValue({ data: [], error: null }),
+      insert: jest.fn().mockResolvedValue({ data: null, error: null }),
+      update: jest.fn().mockResolvedValue({ data: null, error: null }),
+      upsert: jest.fn().mockResolvedValue({ data: null, error: null }),
+      eq: jest.fn().mockReturnThis(),
+      order: jest.fn().mockReturnThis(),
+      single: jest.fn().mockResolvedValue({ data: null, error: null }),
+    })),
+    auth: {
+      getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+      getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
+    },
+  },
+}));
+
 // Unit tests for userFlow utility functions
 import { hasCompletedSurvey, getPostLoginRedirect } from '../../../utils/userFlow';
 import { getSurveyResponse } from '../../../utils/surveyResponses';
 import { mockSurveyResponse, mockIncompleteSurveyResponse, mockEmptySurveyResponse } from '../../fixtures/surveys';
 
-// Mock the surveyResponses module
-jest.mock('../../../utils/surveyResponses');
 const mockGetSurveyResponse = getSurveyResponse as jest.MockedFunction<typeof getSurveyResponse>;
 
 describe('userFlow utilities', () => {
@@ -84,6 +102,7 @@ describe('userFlow utilities', () => {
 
     describe('when there are errors', () => {
       it('should return false when getSurveyResponse returns an error', async () => {
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
         mockGetSurveyResponse.mockResolvedValue({
           data: null,
           error: new Error('Database error')
@@ -95,6 +114,7 @@ describe('userFlow utilities', () => {
       });
 
       it('should return false when getSurveyResponse throws an exception', async () => {
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
         mockGetSurveyResponse.mockRejectedValue(new Error('Network error'));
 
         const result = await hasCompletedSurvey('test-user-exception');
@@ -103,6 +123,7 @@ describe('userFlow utilities', () => {
       });
 
       it('should handle invalid response data gracefully', async () => {
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
         mockGetSurveyResponse.mockResolvedValue({
           data: [{ ...mockSurveyResponse, response: 'invalid-data' }],
           error: null

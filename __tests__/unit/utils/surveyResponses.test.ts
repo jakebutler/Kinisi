@@ -70,6 +70,7 @@ describe('surveyResponses utilities', () => {
 
     describe('when upsert fails', () => {
       it('should return error when database operation fails', async () => {
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
         const dbError = { message: 'Constraint violation', code: '23505' };
         const mockChain = {
           upsert: jest.fn().mockReturnThis(),
@@ -164,6 +165,7 @@ describe('surveyResponses utilities', () => {
 
     describe('when there are database errors', () => {
       it('should return error when database query fails', async () => {
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
         const dbError = { message: 'Connection timeout', code: 'TIMEOUT' };
         const mockChain = {
           select: jest.fn().mockReturnThis(),
@@ -183,6 +185,7 @@ describe('surveyResponses utilities', () => {
       });
 
       it('should handle exceptions and return formatted error', async () => {
+        const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
         const mockChain = {
           select: jest.fn().mockReturnThis(),
           eq: jest.fn().mockReturnThis(),
@@ -196,6 +199,8 @@ describe('surveyResponses utilities', () => {
         expect(result.data).toBeNull();
         expect(result.error).toBeInstanceOf(Error);
         expect(result.error?.message).toBe('Failed to fetch survey response. Please try again.');
+        consoleErrorSpy.mockRestore();
+        consoleErrorSpy.mockRestore();
       });
     });
   });
