@@ -108,6 +108,8 @@ describe('AssessmentChat', () => {
     });
 
     it('should handle API errors gracefully', async () => {
+      // Suppress expected error logs
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
       const user = userEvent.setup();
       
       mockFetch.mockResolvedValueOnce({
@@ -130,9 +132,14 @@ describe('AssessmentChat', () => {
 
       // Should not call onAssessmentUpdate on error
       expect(mockProps.onAssessmentUpdate).not.toHaveBeenCalled();
+
+      // Restore console.error
+      consoleErrorSpy.mockRestore();
     });
 
     it('should handle network errors', async () => {
+      // Suppress expected error logs
+      const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation();
       const user = userEvent.setup();
       
       mockFetch.mockRejectedValueOnce(new Error('Network error'));

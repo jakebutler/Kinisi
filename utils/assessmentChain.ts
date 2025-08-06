@@ -2,20 +2,23 @@ import { ChatOpenAI } from "@langchain/openai";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { RunnableSequence } from "@langchain/core/runnables";
-
-// Prompt template for generating a personalized assessment from survey responses
-// Update this prompt as needed for future changes or LLM providers
-const assessmentPrompt = new PromptTemplate({
-  inputVariables: ["survey"],
-  template: `You are a health and movement coach. Based on the following survey responses, write a personalized assessment that summarizes the user's goals, relevant health information, and provides encouragement. Be concise, friendly, and actionable.\n\nSurvey Responses:\n{survey}\n\nAssessment:`
-});
+import { fetchPromptFromRegistry } from "./promptlayer";
 
 // Function to generate an assessment using LangChain and OpenAI
+// Integrates PromptLayer SDK for tracing and prompt management
 export async function generateAssessmentFromSurvey(surveyResponses: Record<string, any>): Promise<string> {
   // Format survey responses as a readable string
   const surveyText = Object.entries(surveyResponses)
     .map(([key, value]) => `${key}: ${value}`)
     .join("\n");
+
+  // Fetch prompt template from PromptLayer registry
+  const ASSESSMENT_PROMPT_ID = 80123; // ID for 'Personalized Assessment'
+  const promptTemplate = await fetchPromptFromRegistry(ASSESSMENT_PROMPT_ID);
+  const assessmentPrompt = new PromptTemplate({
+    inputVariables: ["survey"],
+    template: promptTemplate
+  });
 
   // Use OpenAI's gpt-3.5-turbo by default; update here to change model/provider
   const llm = new ChatOpenAI({
@@ -35,6 +38,7 @@ export async function generateAssessmentFromSurvey(surveyResponses: Record<strin
   return assessment.trim();
 }
 
+
 // Function to revise an assessment based on user feedback
 export async function reviseAssessmentWithFeedback({
   currentAssessment,
@@ -50,10 +54,12 @@ export async function reviseAssessmentWithFeedback({
     .map(([key, value]) => `${key}: ${value}`)
     .join("\n");
 
-  // Prompt template for revision agent
+  // Fetch revision prompt template from PromptLayer registry
+  const REVISION_PROMPT_ID = 80132; // ID for 'Update Personalized Assessment'
+  const revisionPromptTemplate = await fetchPromptFromRegistry(REVISION_PROMPT_ID);
   const revisionPrompt = new PromptTemplate({
     inputVariables: ["assessment", "feedback", "survey"],
-    template: `You are a health and movement coach. Here is a personalized assessment you wrote for a user based on their survey responses. The user has provided feedback or requested changes. Revise the assessment to reflect their feedback, while ensuring it remains coherent, friendly, and actionable.\n\nSurvey Responses:\n{survey}\n\nOriginal Assessment:\n{assessment}\n\nUser Feedback:\n{feedback}\n\nRevised Assessment:`
+    template: revisionPromptTemplate
   });
 
   // Use OpenAI's gpt-3.5-turbo by default
