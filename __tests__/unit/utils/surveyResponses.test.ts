@@ -1,7 +1,7 @@
 // Unit tests for surveyResponses utility functions
 import { upsertSurveyResponse, getSurveyResponse } from '../../../utils/surveyResponses';
 import { supabase } from '../../../utils/supabaseClient';
-import { mockSurveyResponse } from '../../fixtures/surveys';
+import { mockSurveyResponse } from '../../__fixtures__/surveys.fixture';
 
 // Mock Supabase client
 jest.mock('../../../utils/supabaseClient', () => ({

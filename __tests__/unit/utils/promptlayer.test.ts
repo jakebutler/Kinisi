@@ -51,6 +51,7 @@ describe('fetchPromptFromRegistry', () => {
 
   it('throws if PROMPTLAYER_API_KEY is missing', async () => {
     process.env = { ...OLD_ENV };
+    delete process.env.PROMPTLAYER_API_KEY;
     await expect(promptlayerModule.fetchPromptFromRegistry(PROMPT_ID)).rejects.toThrow('PROMPTLAYER_API_KEY environment variable is not set');
   });
 

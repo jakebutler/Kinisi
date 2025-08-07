@@ -65,6 +65,12 @@ describe('AuthContext', () => {
     mockReplace.mockClear();
     mockUsePathname.mockReturnValue('/');
     
+    // Set default getSession mock to return no session
+    getSessionMock.mockResolvedValue({
+      data: { session: null, user: null },
+      error: null
+    });
+    
     mockSupabase.auth.onAuthStateChange.mockReturnValue({
       data: { subscription: { unsubscribe: jest.fn() } }
     });

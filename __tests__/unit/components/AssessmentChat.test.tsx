@@ -10,7 +10,7 @@ import { mockSurveyResponse } from '../../fixtures/surveys';
 global.fetch = jest.fn();
 
 const mockProps = {
-  initialAssessment: mockAssessment.assessment,
+  initialAssessment: mockAssessment.assessment_text,
   surveyResponses: mockSurveyResponse.response,
   userId: 'test-user-id-123',
   onAssessmentUpdate: jest.fn()
@@ -49,7 +49,7 @@ describe('AssessmentChat', () => {
       mockFetch.mockImplementationOnce(() =>
         new Promise(resolve => setTimeout(() => resolve({
           ok: true,
-          json: async () => ({ assessment: mockRevisedAssessment.assessment })
+          json: async () => ({ assessment: mockRevisedAssessment.assessment_text })
         } as Response), 50))
       );
 
@@ -76,7 +76,7 @@ describe('AssessmentChat', () => {
             'Content-Type': 'application/json',
           },
           body: JSON.stringify({
-            currentAssessment: mockAssessment.assessment,
+            currentAssessment: mockAssessment.assessment_text,
             feedback: 'Please focus more on strength training',
             surveyResponses: mockSurveyResponse.response,
             userId: 'test-user-id-123'
@@ -87,7 +87,7 @@ describe('AssessmentChat', () => {
       // Check that onAssessmentUpdate was called
       await waitFor(() => {
         expect(mockProps.onAssessmentUpdate).toHaveBeenCalledWith(
-          mockRevisedAssessment.assessment
+          mockRevisedAssessment.assessment_text
         );
       });
     });
@@ -167,7 +167,7 @@ describe('AssessmentChat', () => {
         new Promise(resolve => 
           setTimeout(() => resolve({
             ok: true,
-            json: async () => ({ assessment: mockRevisedAssessment.assessment })
+            json: async () => ({ assessment: mockRevisedAssessment.assessment_text })
           } as Response), 100)
         )
       );
@@ -197,7 +197,7 @@ describe('AssessmentChat', () => {
         new Promise(resolve => 
           setTimeout(() => resolve({
             ok: true,
-            json: async () => ({ revisedAssessment: mockRevisedAssessment.assessment })
+            json: async () => ({ revisedAssessment: mockRevisedAssessment.assessment_text })
           } as Response), 100)
         )
       );

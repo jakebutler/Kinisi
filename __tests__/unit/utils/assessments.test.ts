@@ -1,8 +1,8 @@
 // Unit tests for assessment utility functions
 import { getLatestAssessment, generateAndStoreAssessment } from '../../../utils/assessments';
 import { supabase } from '../../../utils/supabaseClient';
-import { mockAssessment } from '../../fixtures/assessments';
-import { mockSurveyResponse } from '../../fixtures/surveys';
+import { mockAssessment } from '../../../__fixtures__/assessments.fixture';
+import { mockSurveyResponse } from '../../../__fixtures__/surveys.fixture';
 
 // Mock Supabase client
 jest.mock('../../../utils/supabaseClient', () => ({
