@@ -1,5 +1,5 @@
 // Mock LangChain functions for testing
-import { mockAssessment, mockRevisedAssessment } from '../fixtures/assessments';
+import { mockAssessment, mockRevisedAssessment } from '../__fixtures__/assessments.fixture';
 
 // Mock assessment generation
 export const mockGenerateAssessmentFromSurvey = jest.fn().mockResolvedValue(

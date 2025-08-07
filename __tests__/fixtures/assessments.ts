@@ -1,59 +1,38 @@
-// Test fixtures for assessment data
-import { Assessment } from '../../utils/assessments';
-
-export const mockAssessment: Assessment = {
+// Mock assessment data for testing
+export const mockAssessment = {
   id: 'assessment-123',
-  user_id: 'test-user-id-123',
-  survey_response_id: 'survey-response-123',
-  assessment: `Based on your survey responses, here's your personalized fitness assessment:
-
-**Fitness Level:** Intermediate
-**Primary Goals:** Weight loss and muscle gain
-**Recommended Approach:** A balanced program combining strength training and cardiovascular exercise.
-
-**Weekly Schedule:**
-- 3 days strength training (full body)
-- 2 days cardio (moderate intensity)
-- 2 days active recovery
-
-**Key Recommendations:**
-1. Focus on compound movements for maximum efficiency
-2. Incorporate progressive overload in your strength training
-3. Maintain a slight caloric deficit for weight loss while preserving muscle
-4. Ensure adequate protein intake (1.6-2.2g per kg body weight)
-
-This program is designed to help you achieve both weight loss and muscle gain simultaneously through a strategic approach to training and nutrition.`,
-  approved: false,
-  created_at: '2024-01-01T00:00:00.000Z',
-  updated_at: '2024-01-01T00:00:00.000Z'
+  user_id: 'demo-user',
+  assessment_text: 'Based on your survey responses, I recommend a strength training program focusing on compound movements. You should start with bodyweight exercises and gradually progress to weighted movements. Your program should include 3-4 sessions per week with adequate rest between sessions.',
+  status: 'draft',
+  created_at: '2023-01-01T00:00:00.000Z',
+  updated_at: '2023-01-01T00:00:00.000Z'
 };
 
-export const mockApprovedAssessment: Assessment = {
-  ...mockAssessment,
-  id: 'assessment-approved-456',
-  approved: true
+export const mockRevisedAssessment = {
+  id: 'assessment-456',
+  user_id: 'demo-user',
+  assessment_text: 'Based on your feedback, I have revised the assessment. Your updated program should focus more on flexibility and mobility work in addition to strength training. I recommend starting with yoga or stretching routines before progressing to strength exercises.',
+  status: 'revised',
+  created_at: '2023-01-01T00:00:00.000Z',
+  updated_at: '2023-01-02T00:00:00.000Z',
+  revision_notes: 'User requested more focus on flexibility and mobility'
 };
 
-export const mockRevisedAssessment: Assessment = {
-  ...mockAssessment,
-  id: 'assessment-revised-789',
-  assessment: `REVISED: Based on your feedback and survey responses, here's your updated personalized fitness assessment:
+export const mockAssessmentDraft = {
+  id: 'assessment-789',
+  user_id: 'demo-user',
+  assessment_text: 'This is a draft assessment that is still being worked on...',
+  status: 'draft',
+  created_at: '2023-01-01T00:00:00.000Z',
+  updated_at: '2023-01-01T00:00:00.000Z'
+};
 
-**Fitness Level:** Intermediate
-**Primary Goals:** Weight loss and muscle gain (with emphasis on strength)
-**Recommended Approach:** A strength-focused program with strategic cardio integration.
-
-**Weekly Schedule:**
-- 4 days strength training (upper/lower split)
-- 1 day HIIT cardio
-- 2 days active recovery or light cardio
-
-**Key Recommendations:**
-1. Prioritize heavy compound movements (deadlifts, squats, bench press)
-2. Use periodization for strength gains
-3. Strategic cardio timing to preserve muscle
-4. Higher protein intake (2.0-2.4g per kg body weight)
-
-This revised program places greater emphasis on strength development while still supporting your weight loss goals.`,
-  approved: false
+export const mockAssessmentApproved = {
+  id: 'assessment-101',
+  user_id: 'demo-user',
+  assessment_text: 'Your final approved fitness assessment recommends a comprehensive program including strength training, cardiovascular exercise, and flexibility work. This program is tailored to your specific goals and fitness level.',
+  status: 'approved',
+  created_at: '2023-01-01T00:00:00.000Z',
+  updated_at: '2023-01-03T00:00:00.000Z',
+  approved_at: '2023-01-03T00:00:00.000Z'
 };

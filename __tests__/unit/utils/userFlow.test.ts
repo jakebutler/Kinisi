@@ -21,7 +21,7 @@ jest.mock('../../../utils/supabaseClient', () => ({
 // Unit tests for userFlow utility functions
 import { hasCompletedSurvey, getPostLoginRedirect } from '../../../utils/userFlow';
 import { getSurveyResponse } from '../../../utils/surveyResponses';
-import { mockSurveyResponse, mockIncompleteSurveyResponse, mockEmptySurveyResponse } from '../../fixtures/surveys';
+import { mockSurveyResponse, mockSurveyResponseIncomplete, mockSurveyResponseEmpty } from '../../__fixtures__/surveys.fixture';
 
 const mockGetSurveyResponse = getSurveyResponse as jest.MockedFunction<typeof getSurveyResponse>;
 
@@ -59,7 +59,7 @@ describe('userFlow utilities', () => {
 
       it('should return false when survey response is incomplete', async () => {
         mockGetSurveyResponse.mockResolvedValue({
-          data: [mockIncompleteSurveyResponse],
+          data: [mockSurveyResponseIncomplete],
           error: null
         });
 
@@ -70,7 +70,7 @@ describe('userFlow utilities', () => {
 
       it('should return false when survey response is empty', async () => {
         mockGetSurveyResponse.mockResolvedValue({
-          data: [mockEmptySurveyResponse],
+          data: [mockSurveyResponseEmpty],
           error: null
         });
 
