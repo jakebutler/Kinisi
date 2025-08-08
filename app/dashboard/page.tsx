@@ -8,6 +8,9 @@ import { getSurveyResponse } from '../../utils/surveyResponses';
 import { getLatestAssessment, generateAndStoreAssessment } from '../../utils/assessments';
 import intakeSurveySchema from '../survey/intake-survey-questions.json';
 import { useAuth } from "@/components/context/AuthContext";
+import ProgramSection from "@/components/dashboard/ProgramSection";
+import { ExerciseProgramPayload } from "@/utils/types/programTypes";
+import { getProgramByUserId, approveProgram } from "@/utils/programDataHelpers";
 
 // Helper function to format survey answers for display
 function formatAnswer(key: string, value: unknown, schema: Record<string, unknown>): React.ReactNode {
@@ -78,6 +81,45 @@ export default function DashboardPage() {
   const [isGeneratingAssessment, setIsGeneratingAssessment] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Fitness program state
+  const [program, setProgram] = useState<ExerciseProgramPayload | null>(null);
+  const [isGeneratingProgram, setIsGeneratingProgram] = useState(false);
+  const [programError, setProgramError] = useState<string | null>(null);
+  const [programApproved, setProgramApproved] = useState(false);
+  const [startDate, setStartDate] = useState<string | null>(null);
+  const [programId, setProgramId] = useState<string | null>(null);
+
+  // Fetch program after assessment is approved
+  useEffect(() => {
+    const fetchProgram = async () => {
+      if (!user || !assessmentApproved) return;
+      setIsGeneratingProgram(true);
+      setProgramError(null);
+      try {
+        // Fetch the user's latest program
+        const programData = await getProgramByUserId(user.id);
+        if (programData && programData.program_json) {
+          setProgram(programData.program_json);
+          setProgramApproved(programData.status === "approved");
+          setStartDate(programData.start_date || null);
+          setProgramId(programData.id || null);
+        } else {
+          // No program exists yet - this is expected for new users
+          setProgram(null);
+          setProgramApproved(false);
+          setStartDate(null);
+          setProgramId(null);
+        }
+      } catch {
+        setProgramError("We're having trouble creating your program right now. Please try back later.");
+      } finally {
+        setIsGeneratingProgram(false);
+      }
+    };
+    fetchProgram();
+    // Only run when assessment is approved and user is present
+  }, [user, assessmentApproved]);
 
   useEffect(() => {
     const loadDashboardData = async () => {
@@ -309,6 +351,98 @@ export default function DashboardPage() {
               </div>
             )}
           </div>
+
+          {/* Fitness Program Section */}
+          <ProgramSection
+            assessmentApproved={assessmentApproved}
+            program={program}
+            programApproved={programApproved}
+            isGeneratingProgram={isGeneratingProgram}
+            programError={programError}
+            onSeeProgram={() => {
+              // Route to program details page with program ID
+              if (programId) {
+                router.push(`/program/${programId}`);
+              }
+            }}
+            onGiveFeedback={() => {
+              // Route to feedback UI (scoped to program)
+              if (programId) {
+                router.push(`/program/${programId}/feedback`);
+              }
+            }}
+            onApproveProgram={async () => {
+              if (!user || !program || !programId) return;
+              try {
+                setIsGeneratingProgram(true);
+                await approveProgram(programId);
+                setProgramApproved(true);
+              } catch {
+                setProgramError("Failed to approve program. Please try again.");
+              } finally {
+                setIsGeneratingProgram(false);
+              }
+            }}
+            onGenerateProgram={async () => {
+              if (!user || !assessmentApproved) return;
+              if (!assessment) {
+                setProgramError("Assessment content not found. Please refresh and try again.");
+                return;
+              }
+              try {
+                setIsGeneratingProgram(true);
+                setProgramError(null);
+                const res = await fetch('/api/program/create', {
+                  method: 'POST',
+                  headers: { 'Content-Type': 'application/json' },
+                  body: JSON.stringify({
+                    assessment,
+                    exerciseFilter: {},
+                    userId: user.id,
+                  }),
+                });
+                if (!res.ok) {
+                  let errMsg = 'Failed to generate program';
+                  try {
+                    const j = await res.json();
+                    if (j?.error) errMsg = j.error;
+                  } catch {}
+                  throw new Error(errMsg);
+                }
+                const saved = await res.json();
+                setProgram(saved?.program_json || null);
+                setProgramApproved(saved?.status === 'approved');
+                setStartDate(saved?.start_date || null);
+                setProgramId(saved?.id || null);
+              } catch {
+                setProgramError("Failed to generate program. Please try again.");
+              } finally {
+                setIsGeneratingProgram(false);
+              }
+            }}
+            onStartDateChange={async (date) => {
+              setStartDate(date);
+              if (!user || !program || !programId) return;
+              try {
+                const res = await fetch(`/api/program/${programId}/start-date`, {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({ startDate: date })
+                });
+                if (!res.ok) {
+                  throw new Error("Failed to update start date");
+                }
+                // Optionally update local state with returned data
+                try {
+                  const updated = await res.json();
+                  if (updated?.start_date) setStartDate(updated.start_date);
+                } catch {}
+              } catch {
+                setProgramError("Failed to update start date. Please try again.");
+              }
+            }}
+            startDate={startDate}
+          />
         </div>
       </div>
     </ProtectedRoute>

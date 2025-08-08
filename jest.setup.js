@@ -17,37 +17,54 @@ if (typeof global.Response === 'undefined') {
 }
 
 // Mock NextResponse and NextRequest for API route testing
-const createMockResponse = (data, init) => {
-  const status = init?.status || 200;
-  return {
-    status: status,
-    headers: new Map(Object.entries({
-      'Content-Type': 'application/json',
-      ...init?.headers || {}
-    })),
-    json: jest.fn().mockResolvedValue(data),
-    text: jest.fn().mockResolvedValue(JSON.stringify(data)),
-    ok: status >= 200 && status < 300
-  };
-};
+jest.mock('next/server', () => {
+  class MockNextResponse {
+    constructor(body, init) {
+      this._body = body;
+      this._status = init?.status || 200;
+      this._headers = new Headers({
+        'Content-Type': 'application/json',
+        ...(init?.headers || {})
+      });
+    }
 
-// Create a mock that mimics NextResponse.json() behavior
-const NextResponseMock = {
-  json: jest.fn(createMockResponse)
-};
+    static json(body, init) {
+      const status = init?.status || 200;
+      return {
+        status,
+        ok: status >= 200 && status < 300,
+        headers: new Headers({
+          'Content-Type': 'application/json',
+          ...(init?.headers || {})
+        }),
+        json: jest.fn().mockResolvedValue(body),
+        text: jest.fn().mockResolvedValue(JSON.stringify(body)),
+      };
+    }
+  }
 
-jest.mock('next/server', () => ({
-  NextResponse: NextResponseMock,
-  NextRequest: class MockNextRequest extends Request {
+  class MockNextRequest extends Request {
     constructor(input, init) {
       super(input, init);
       this.nextUrl = new URL(input);
       this.cookies = new Map();
       this.page = {};
       this.ua = '';
+      this._init = init || {};
+    }
+
+    async json() {
+      // If init.body is provided (string), parse it; otherwise fallback to super.text()
+      if (this._init && typeof this._init.body === 'string') {
+        return JSON.parse(this._init.body);
+      }
+      const txt = await this.text();
+      return txt ? JSON.parse(txt) : {};
     }
   }
-}));
+
+  return { NextResponse: MockNextResponse, NextRequest: MockNextRequest };
+});
 
 // Block all real network calls in tests
 beforeAll(() => {

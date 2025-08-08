@@ -1,0 +1,21 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "incremental": false
+  },
+  "exclude": [
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/__tests__/**",
+    "**/__mocks__/**",
+    "__mocks__/**",
+    "jest.config.cjs",
+    "jest.setup.js",
+    "playwright.config.*",
+    "tests/**",
+    "e2e/**",
+    "node_modules/**",
+    ".next/**"
+  ]
+}

@@ -5,20 +5,20 @@ export const getAvailableExercises = jest.fn().mockResolvedValue([
   {
     exercise_id: 'pushup',
     name: 'Push-up',
-    target_muscles: ['chest'],
-    equipments: ['bodyweight']
+    primary_muscles: ['chest'],
+    equipment: ['bodyweight']
   },
   {
     exercise_id: 'squat',
     name: 'Squat',
-    target_muscles: ['legs'],
-    equipments: ['bodyweight']
+    primary_muscles: ['legs'],
+    equipment: ['bodyweight']
   },
   {
     exercise_id: 'plank',
     name: 'Plank',
-    target_muscles: ['core'],
-    equipments: ['bodyweight']
+    primary_muscles: ['core'],
+    equipment: ['bodyweight']
   }
 ]);
 
@@ -62,11 +62,23 @@ export const approveProgram = jest.fn().mockImplementation((id: string) => {
   });
 });
 
+export const updateProgramJson = jest.fn().mockImplementation((id: string, program_json: any, status?: string) => {
+  if (id === 'bad') {
+    return Promise.reject(new Error('Invalid program ID'));
+  }
+  return Promise.resolve({
+    id,
+    program_json,
+    status: status || 'draft'
+  });
+});
+
 // Export as default as well for different import styles
 export default {
   getAvailableExercises,
   saveExerciseProgram,
   getProgramById,
   saveProgramFeedback,
-  approveProgram
+  approveProgram,
+  updateProgramJson
 };
