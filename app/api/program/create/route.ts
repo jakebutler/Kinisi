@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { assessment, exerciseFilter } = body;
+    const { assessment, exerciseFilter, userId } = body;
 
     // Validate assessment
     if (!assessment || typeof assessment !== 'string') {
@@ -40,6 +40,15 @@ export async function POST(req: NextRequest) {
       console.error('[400] Missing or invalid exerciseFilter:', { exerciseFilter, type: typeof exerciseFilter });
       return NextResponse.json(
         { error: "ExerciseFilter is required and must be an object" },
+        { status: 400 }
+      );
+    }
+
+    // Validate userId (temporary until auth context is wired here)
+    if (!userId || typeof userId !== 'string') {
+      console.error('[400] Missing or invalid userId:', { userId, type: typeof userId });
+      return NextResponse.json(
+        { error: "userId is required and must be a string" },
         { status: 400 }
       );
     }
@@ -105,8 +114,8 @@ export async function POST(req: NextRequest) {
     }
 
     // Save generated program to Supabase
-    // TODO: Replace with actual user_id from auth
-    const user_id = "demo-user";
+    // TODO: Replace with user_id from auth context rather than request body
+    const user_id = userId as string;
     const { saveExerciseProgram } = await import("@/utils/programDataHelpers");
     try {
       const saved = await saveExerciseProgram({

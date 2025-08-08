@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "next lint",
     "test": "npx jest",
+    "typecheck": "tsc -p tsconfig.build.json",
     "prepare": "husky install"
   },
   "dependencies": {

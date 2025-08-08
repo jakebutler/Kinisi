@@ -7,16 +7,18 @@ import axios from "axios";
  * @returns The parsed JSON response from the LLM
  */
 export async function callLLMWithPrompt(prompt: string): Promise<any> {
-  // Example using PromptLayer's OpenAI proxy
-  const apiKey = process.env.PROMPTLAYER_API_KEY;
-  if (!apiKey) throw new Error("Missing PROMPTLAYER_API_KEY");
+  // Use OpenAI Chat Completions API directly (assessment flow already uses OpenAI successfully)
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) throw new Error("Missing OPENAI_API_KEY");
+
+  const model = process.env.OPENAI_MODEL || "gpt-4o-mini";
 
   const response = await axios.post(
-    "https://api.promptlayer.com/openai/chat/completions",
+    "https://api.openai.com/v1/chat/completions",
     {
-      model: "gpt-4-turbo",
+      model,
       messages: [
-        { role: "system", content: "You are a helpful assistant." },
+        { role: "system", content: "You are a helpful assistant. Respond ONLY with strict JSON." },
         { role: "user", content: prompt }
       ],
       temperature: 0.4,
