@@ -456,12 +456,13 @@ const SurveyPage = () => {
   }
 
   return (
-    <div className="max-w-2xl mx-auto py-10 px-4">
+    <div className="aura-hero min-h-screen">
+      <div className="max-w-2xl mx-auto py-10 px-4">
       <div className="mb-6">
         <h1 className="text-2xl font-bold mb-2">Intake Survey</h1>
-        <div className="w-full bg-gray-200 rounded-full h-2.5">
+        <div className="w-full progress-outer rounded-full h-2.5">
           <div 
-            className="bg-blue-600 h-2.5 rounded-full" 
+            className="progress-inner h-2.5 rounded-full" 
             style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
           ></div>
         </div>
@@ -491,7 +492,7 @@ const SurveyPage = () => {
             type="button"
             onClick={handlePrevious}
             disabled={currentQuestionIndex === 0}
-            className={`px-4 py-2 rounded ${currentQuestionIndex === 0 ? 'bg-gray-300 cursor-not-allowed' : 'bg-gray-600 text-white hover:bg-gray-700'}`}
+            className={`px-4 py-2 rounded ${currentQuestionIndex === 0 ? 'bg-gray-300 text-gray-500 cursor-not-allowed' : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
           >
             Previous
           </button>
@@ -500,7 +501,7 @@ const SurveyPage = () => {
             <button
               type="button"
               onClick={handleNext}
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700"
+              className={`btn-gradient text-white px-6 py-2 rounded ${(!formData[currentQuestion.key] && currentQuestion.required) ? 'opacity-50 cursor-not-allowed' : ''}`}
               disabled={!formData[currentQuestion.key] && currentQuestion.required}
             >
               Next
@@ -510,15 +511,14 @@ const SurveyPage = () => {
               type="button"
               onClick={handleSubmit}
               disabled={submitting || (currentQuestion.required && !formData[currentQuestion.key])}
-              className={`px-6 py-2 rounded ${(submitting || (currentQuestion.required && !formData[currentQuestion.key])) 
-                ? 'bg-blue-400 cursor-not-allowed' 
-                : 'bg-green-600 hover:bg-green-700'} text-white`}
+              className={`btn-gradient text-white px-6 py-2 rounded ${(submitting || (currentQuestion.required && !formData[currentQuestion.key])) ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {submitting ? 'Submitting...' : 'Submit Survey'}
             </button>
           )}
         </div>
       </div>
+    </div>
     </div>
   );
 };
