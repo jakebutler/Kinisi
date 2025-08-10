@@ -10,7 +10,8 @@
     "lint": "next lint",
     "test": "npx jest",
     "typecheck": "tsc -p tsconfig.build.json",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "ingest:rag": "node scripts/ingest_exercises_to_rag.js"
   },
   "dependencies": {
     "@langchain/core": "^0.3.66",

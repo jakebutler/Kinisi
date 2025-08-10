@@ -3,6 +3,7 @@ import { PromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { RunnableSequence } from "@langchain/core/runnables";
 import { fetchPromptFromRegistry } from "./promptlayer";
+import { retrieveRagChunksForSurvey, formatChunksAsContext } from "./rag";
 
 // Function to generate an assessment using LangChain and OpenAI
 // Integrates PromptLayer SDK for tracing and prompt management
@@ -11,6 +12,18 @@ export async function generateAssessmentFromSurvey(surveyResponses: Record<strin
   const surveyText = Object.entries(surveyResponses)
     .map(([key, value]) => `${key}: ${value}`)
     .join("\n");
+
+  // Retrieve RAG context based on survey responses (graceful fallback on failure)
+  let augmentedSurvey = surveyText;
+  try {
+    const ragChunks = await retrieveRagChunksForSurvey(surveyResponses, 5);
+    const ctx = formatChunksAsContext(ragChunks);
+    if (ctx) {
+      augmentedSurvey = `${surveyText}\n\nCONTEXT:\n${ctx}`;
+    }
+  } catch (e) {
+    console.warn("RAG retrieval failed, continuing without context", e);
+  }
 
   // Fetch prompt template from PromptLayer registry
   const ASSESSMENT_PROMPT_ID = 80123; // ID for 'Personalized Assessment'
@@ -34,7 +47,7 @@ export async function generateAssessmentFromSurvey(surveyResponses: Record<strin
   ]);
 
   // Run the chain
-  const assessment = await chain.invoke({ survey: surveyText });
+  const assessment = await chain.invoke({ survey: augmentedSurvey });
   return assessment.trim();
 }
 

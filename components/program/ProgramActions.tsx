@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 
 export default function ProgramActions({ programId, status }: { programId: string; status?: string }) {
@@ -10,6 +10,17 @@ export default function ProgramActions({ programId, status }: { programId: strin
   const [loading, setLoading] = useState<"idle" | "feedback" | "revise" | "approve">("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+
+  // If navigated with #feedback, ensure the section is scrolled into view
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.location.hash === '#feedback') {
+      const el = document.getElementById('feedback');
+      if (el) {
+        // Delay to ensure layout is ready
+        setTimeout(() => el.scrollIntoView({ behavior: 'smooth', block: 'start' }), 0);
+      }
+    }
+  }, []);
 
   async function postJson(url: string, body: any, method: string = "POST") {
     const res = await fetch(url, {
@@ -71,7 +82,7 @@ export default function ProgramActions({ programId, status }: { programId: strin
   const disabled = loading !== "idle" || isPending;
 
   return (
-    <div className="mt-6 border-t pt-4">
+    <div id="feedback" className="mt-6 border-t pt-4">
       <h2 className="text-lg font-semibold mb-3">Program Feedback & Actions</h2>
       <div className="space-y-3">
         <textarea
