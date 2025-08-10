@@ -81,18 +81,29 @@ export async function saveProgramFeedback({
   program_id,
   session_id,
   user_id,
-  feedback
+  feedback,
+  revision
 }: {
   program_id: string;
   session_id?: string;
   user_id: string;
   feedback: string;
+  revision?: number;
 }) {
-  const { data, error } = await supabase.from("program_feedback").insert([
-    { program_id, session_id, user_id, feedback }
-  ]);
+  const payload: Record<string, any> = {
+    program_id,
+    session_id,
+    user_id,
+    feedback,
+    revision: typeof revision === 'number' ? revision : 1,
+  };
+  const { data, error } = await supabase
+    .from("program_feedback")
+    .insert([payload])
+    .select()
+    .single();
   if (error) throw new Error(error.message);
-  return data?.[0];
+  return data;
 }
 
 // Approve a program (set status to 'approved')

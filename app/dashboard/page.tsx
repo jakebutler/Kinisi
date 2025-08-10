@@ -89,6 +89,9 @@ export default function DashboardPage() {
   const [programApproved, setProgramApproved] = useState(false);
   const [startDate, setStartDate] = useState<string | null>(null);
   const [programId, setProgramId] = useState<string | null>(null);
+  // RAG preview (beta)
+  const [ragPreview, setRagPreview] = useState<Array<{ content: string; metadata?: Record<string, unknown> }>>([]);
+  const [ragLoading, setRagLoading] = useState(false);
 
   // Fetch program after assessment is approved
   useEffect(() => {
@@ -177,6 +180,29 @@ export default function DashboardPage() {
 
     loadDashboardData();
   }, [user, router]);
+
+  // Fetch RAG preview when survey response is available
+  useEffect(() => {
+    const fetchRag = async () => {
+      if (!surveyResponse) return;
+      try {
+        setRagLoading(true);
+        const res = await fetch('/api/rag/retrieve', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ surveyResponses: surveyResponse, k: 3 }),
+        });
+        if (!res.ok) throw new Error('RAG fetch failed');
+        const json = await res.json();
+        setRagPreview(Array.isArray(json?.chunks) ? json.chunks : []);
+      } catch {
+        setRagPreview([]);
+      } finally {
+        setRagLoading(false);
+      }
+    };
+    fetchRag();
+  }, [surveyResponse]);
 
   const handleApproveAssessment = async () => {
     if (!user || !assessment) return;
@@ -285,6 +311,27 @@ export default function DashboardPage() {
             )}
           </div>
 
+          {/* RAG Preview (beta) */}
+          {surveyResponse && (
+            <div className="bg-white rounded-lg shadow-md p-6 mb-8">
+              <h2 className="text-2xl font-semibold mb-2">Related Knowledge (beta)</h2>
+              <p className="text-sm text-gray-600 mb-4">Context retrieved based on your survey to help personalize results.</p>
+              {ragLoading ? (
+                <div className="text-gray-600">Loading suggestions…</div>
+              ) : ragPreview.length > 0 ? (
+                <ul className="list-disc pl-5 space-y-2">
+                  {ragPreview.map((c, i) => (
+                    <li key={i} className="text-gray-800">
+{`${c?.metadata?.name || 'Exercise'}: ${String(c?.content || '').slice(0, 160)}${String(c?.content || '').length > 160 ? '…' : ''}`}
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <div className="text-gray-600">No related knowledge found yet.</div>
+              )}
+            </div>
+          )}
+
           {/* Assessment Section */}
           <div className="bg-white rounded-lg shadow-md p-6">
             <h2 className="text-2xl font-semibold mb-4">Your Personalized Assessment</h2>
@@ -366,9 +413,9 @@ export default function DashboardPage() {
               }
             }}
             onGiveFeedback={() => {
-              // Route to feedback UI (scoped to program)
+              // Route to feedback section within the program page
               if (programId) {
-                router.push(`/program/${programId}/feedback`);
+                router.push(`/program/${programId}#feedback`);
               }
             }}
             onApproveProgram={async () => {

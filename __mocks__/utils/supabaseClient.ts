@@ -43,6 +43,7 @@ const mockSupabase = {
     rollback: jest.fn().mockReturnThis(),
     returns: jest.fn().mockReturnThis(),
   })),
+  rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
   auth: {
     getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
     getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
@@ -77,10 +78,5 @@ const mockSupabase = {
 
 // Export the mock using the same name as the real module
 export const supabase = mockSupabase;
-
-// Default export for compatibility
+// Default export for compatibility with any default imports
 export default mockSupabase;
-
-export default {
-  createClient,
-};
