@@ -1,5 +1,6 @@
 // app/api/exercises/[id]/route.ts
 import { NextResponse } from "next/server";
+import { handleErrorResponse } from "@/utils/errorHandling";
 // import { getExerciseById } from "@/utils/programDataHelpers";
 
 export async function GET() {
@@ -12,7 +13,6 @@ export async function GET() {
     }
     return NextResponse.json(exercise, { status: 200 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 400 });
+    return handleErrorResponse(err, 400);
   }
 }

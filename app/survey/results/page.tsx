@@ -5,61 +5,7 @@ import { getSurveyResponse } from "../../../utils/surveyResponses";
 import { getLatestAssessment, generateAndStoreAssessment } from "../../../utils/assessments";
 import AssessmentChat from "../../../components/AssessmentChat";
 import intakeSurveySchema from "../intake-survey-questions.json";
-
-function formatAnswer(key: string, value: unknown, schema: Record<string, unknown>): React.ReactNode {
-  // Handle time commitment object
-  if (key === 'timeCommitment' && value && typeof value === 'object' && value !== null &&
-      'daysPerWeek' in value && 'minutesPerSession' in value && 'preferredTimeOfDay' in value) {
-    const tc = value as { daysPerWeek: number; minutesPerSession: number; preferredTimeOfDay: string };
-    return (
-      <span>
-        {tc.daysPerWeek} days/week, {tc.minutesPerSession} min/session, Preferred: {tc.preferredTimeOfDay}
-      </span>
-    );
-  }
-  
-  // Handle array values (like multiselect)
-  if (Array.isArray(value)) {
-    return value.length > 0 ? value.join(', ') : 'None';
-  }
-  
-  // Handle enums (single and multiple choice)
-  // Handle enums (single and multiple choice)
-  if (
-    schema &&
-    typeof schema === 'object' &&
-    'enum' in schema &&
-    Array.isArray((schema as { enum: unknown }).enum)
-  ) {
-    const enumArray = (schema as { enum: unknown[] }).enum;
-    const enumNames = 'enumNames' in schema && Array.isArray((schema as { enumNames: unknown[] }).enumNames)
-      ? (schema as { enumNames: string[] }).enumNames
-      : undefined;
-    if (Array.isArray(value)) {
-      return (
-        <span>
-          {value
-            .map((v: string) => {
-              const idx = enumArray.indexOf(v);
-              return enumNames ? enumNames[idx] : v;
-            })
-            .join(', ')}
-        </span>
-      );
-    } else {
-      const idx = enumArray.indexOf(value);
-      return <span>{enumNames ? String(enumNames[idx]) : String(value)}</span>;
-    }
-  }
-  
-  // Handle boolean values
-  if (typeof value === 'boolean') {
-    return value ? 'Yes' : 'No';
-  }
-  
-  // Default case
-  return <span>{value !== undefined && value !== null ? value.toString() : 'Not specified'}</span>;
-}
+import { formatAnswer } from "@/utils/survey.tsx";
 
 const SurveyResultsPage = () => {
   const [response, setResponse] = useState<Record<string, unknown> | null>(null);

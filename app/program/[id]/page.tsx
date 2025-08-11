@@ -1,6 +1,6 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import Link from "next/link";
-import { getProgramById, getExerciseNamesByIds } from "@/utils/programDataHelpers";
+import { getProgramById, getExerciseNamesByIds, extractExerciseIdsFromProgram } from "@/utils/programDataHelpers";
 import ProgramActions from "@/components/program/ProgramActions";
 
 // Program details page: renders from program_json since relational sessions may not be populated yet
@@ -38,12 +38,8 @@ export default async function ProgramDetailsPage({ params }: { params: Promise<{
   const totalSessions = weeks.reduce((sum: number, w: any) => sum + (Array.isArray(w.sessions) ? w.sessions.length : 0), 0);
 
   // Build exercise_id -> name map for rendering
-  const allIds: string[] = weeks.flatMap((w: any) =>
-    Array.isArray(w.sessions)
-      ? w.sessions.flatMap((s: any) => Array.isArray(s.exercises) ? s.exercises.map((e: any) => e.exercise_id).filter(Boolean) : [])
-      : []
-  );
-  const nameMap = await getExerciseNamesByIds(Array.from(new Set(allIds)));
+  const allIds = extractExerciseIdsFromProgram(programJson);
+  const nameMap = await getExerciseNamesByIds(allIds);
 
   return (
     <div className="max-w-4xl mx-auto p-6">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { reviseAssessmentWithFeedback } from '../../../../utils/assessmentChain';
 import { createSupabaseServerClient } from '../../../../utils/supabaseServer';
+import { getAuthenticatedUser } from '../../../../utils/auth';
 
 // POST /api/assessment/feedback
 export async function POST(req: NextRequest) {
@@ -15,13 +16,9 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { user, response } = await getAuthenticatedUser(supabase);
+    if (!user) return response;
+
 
     // 2. Find the latest survey_response_id for this user
     const { data: surveyRows, error: surveyError } = await supabase

@@ -4,6 +4,7 @@ import { getProgramById, getAvailableExercises, updateProgramJson } from "@/util
 import { buildProgramRevisionPrompt } from "@/utils/programPromptTemplate";
 import { Exercise, ExerciseProgramPayload } from "@/utils/types/programTypes";
 import { callLLMWithPrompt } from "@/utils/llm";
+import { handleErrorResponse } from "@/utils/errorHandling";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -88,7 +89,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json(updated, { status: 200 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return handleErrorResponse(err, 500);
   }
 }

@@ -19,6 +19,7 @@
     "@supabase/ssr": "^0.5.0",
     "@supabase/supabase-js": "^2.49.4",
     "axios": "^1.11.0",
+    "jscpd": "^4.0.5",
     "langchain": "^0.3.24",
     "next": "15.3.2",
     "openai": "^4.98.0",

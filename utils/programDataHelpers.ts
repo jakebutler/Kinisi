@@ -176,3 +176,16 @@ export async function getExerciseNamesByIds(ids: string[]): Promise<Record<strin
   }
   return map;
 }
+
+export function extractExerciseIdsFromProgram(program: any): string[] {
+  const ids: string[] = Array.isArray(program?.weeks)
+    ? program.weeks.flatMap((w: any) =>
+        Array.isArray(w.sessions)
+          ? w.sessions.flatMap((s: any) =>
+              Array.isArray(s.exercises) ? s.exercises.map((e: any) => e.exercise_id).filter(Boolean) : []
+            )
+          : []
+      )
+    : [];
+  return Array.from(new Set(ids));
+}

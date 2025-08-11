@@ -1,6 +1,7 @@
 // app/api/program/[id]/approve/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { approveProgram } from "@/utils/programDataHelpers";
+import { handleErrorResponse } from "@/utils/errorHandling";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const paramsValue = await params;
@@ -18,7 +19,6 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
     return NextResponse.json(approved, { status: 200 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 400 });
+    return handleErrorResponse(err, 400);
   }
 }

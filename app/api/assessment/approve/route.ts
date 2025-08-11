@@ -1,17 +1,13 @@
 import { NextResponse } from 'next/server';
 import { createSupabaseServerClient } from '../../../../utils/supabaseServer';
+import { getAuthenticatedUser } from '../../../../utils/auth';
 
 // POST /api/assessment/approve
 export async function POST() {
   try {
     const supabase = await createSupabaseServerClient();
-    const {
-      data: { user },
-      error: userError,
-    } = await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    const { user, response } = await getAuthenticatedUser(supabase);
+    if (!user) return response;
 
     // Find the latest assessment id for this user
     const { data: latest, error: latestError } = await supabase

@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client";
 import React, { useEffect, useState } from "react";
-import { getExerciseNamesByIds } from "@/utils/programDataHelpers";
+import { getExerciseNamesByIds, extractExerciseIdsFromProgram } from "@/utils/programDataHelpers";
 
 interface ProgramSectionProps {
   assessmentApproved: boolean;
@@ -35,21 +35,12 @@ const ProgramSection: React.FC<ProgramSectionProps> = ({
   useEffect(() => {
     async function fetchNames() {
       try {
-        const ids: string[] = Array.isArray(program?.weeks)
-          ? program.weeks.flatMap((w: any) =>
-              Array.isArray(w.sessions)
-                ? w.sessions.flatMap((s: any) =>
-                    Array.isArray(s.exercises) ? s.exercises.map((e: any) => e.exercise_id).filter(Boolean) : []
-                  )
-                : []
-            )
-          : [];
-        const unique = Array.from(new Set(ids));
-        if (unique.length === 0) {
+        const uniqueIds = extractExerciseIdsFromProgram(program);
+        if (uniqueIds.length === 0) {
           setExerciseNames({});
           return;
         }
-        const map = await getExerciseNamesByIds(unique);
+        const map = await getExerciseNamesByIds(uniqueIds);
         setExerciseNames(map);
       } catch {
         // best-effort; fall back to IDs
