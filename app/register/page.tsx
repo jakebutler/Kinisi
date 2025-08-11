@@ -40,7 +40,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center">
       <form
         className="w-full max-w-sm bg-white p-8 rounded shadow"
         onSubmit={handleRegister}
@@ -75,13 +75,13 @@ export default function RegisterPage() {
         {success && <div className="mb-2 text-green-700">{success}</div>}
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded disabled:opacity-50"
+          className="w-full btn-gradient text-white py-2 rounded disabled:opacity-50"
           disabled={loading}
         >
           {loading ? "Registering..." : "Register"}
         </button>
         <div className="flex justify-between mt-4 text-sm">
-          <Link href="/login" className="text-blue-600 hover:underline">
+          <Link href="/login" className="text-[var(--brand-puce)] hover:underline">
             Sign In
           </Link>
         </div>

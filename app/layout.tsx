@@ -1,9 +1,14 @@
 import "./globals.css";
 import { AuthProvider } from "@/components/context/AuthContext";
 import NavBar from "@/components/ui/NavBar";
-import { Baloo_2 } from "next/font/google";
+import Footer from "@/components/ui/Footer";
+import { Nunito, Open_Sans, Lato } from "next/font/google";
 
-const baloo = Baloo_2({ subsets: ["latin"] });
+// Global body font
+const nunito = Nunito({ subsets: ["latin"], weight: ["400", "600", "700"], display: "swap" });
+// Expose as CSS variables so they load and are available as fallbacks
+const openSans = Open_Sans({ subsets: ["latin"], weight: ["400", "600", "700"], display: "swap", variable: "--font-open-sans" });
+const lato = Lato({ subsets: ["latin"], weight: ["400", "700"], display: "swap", variable: "--font-lato" });
 
 export default function RootLayout({
   children,
@@ -12,10 +17,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={`${baloo.className} antialiased`}>
+      <body className={`${nunito.className} ${openSans.variable} ${lato.variable} antialiased aura-hero min-h-screen`}>
+        <a href="#main-content" className="skip-link">Skip to main content</a>
         <AuthProvider>
           <NavBar />
-          <main>{children}</main>
+          <main id="main-content" tabIndex={-1}>{children}</main>
+          <Footer />
         </AuthProvider>
       </body>
     </html>

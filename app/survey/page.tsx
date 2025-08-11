@@ -373,7 +373,7 @@ const SurveyPage = () => {
                   value={option.value}
                   checked={value === option.value}
                   onChange={() => handleChangeFn(option.value)}
-                  className="h-4 w-4 text-blue-600"
+                  className="h-4 w-4 accent-[var(--brand-puce)]"
                   required={question.required}
                 />
                 <span>{option.label}</span>
@@ -414,7 +414,7 @@ const SurveyPage = () => {
                       : selectedValues.filter(v => v !== option.value);
                     handleChangeFn(newValue);
                   }}
-                  className="h-4 w-4 text-blue-600"
+                  className="h-4 w-4 accent-[var(--brand-puce)]"
                 />
                 <span>{option.label}</span>
               </label>
@@ -452,7 +452,11 @@ const SurveyPage = () => {
   };
 
   if (loading) {
-    return <div className="flex min-h-screen items-center justify-center text-gray-500">Loading...</div>;
+    return (
+      <div className="flex min-h-screen items-center justify-center text-gray-500" role="status" aria-live="polite">
+        Loading...
+      </div>
+    );
   }
 
   return (

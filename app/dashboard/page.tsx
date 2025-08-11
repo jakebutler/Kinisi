@@ -230,9 +230,9 @@ export default function DashboardPage() {
   if (isCheckingSurvey || loading) {
     return (
       <ProtectedRoute>
-        <div className="flex min-h-screen items-center justify-center bg-gray-50">
-          <div className="bg-white p-8 rounded shadow w-full max-w-md text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <div className="flex min-h-screen items-center justify-center">
+          <div className="bg-white p-8 rounded shadow w-full max-w-md text-center" role="status" aria-live="polite">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand-puce)] mx-auto mb-4" aria-hidden="true"></div>
             <p className="text-gray-700">Loading your dashboard...</p>
           </div>
         </div>
@@ -247,13 +247,13 @@ export default function DashboardPage() {
   if (error) {
     return (
       <ProtectedRoute>
-        <div className="flex min-h-screen items-center justify-center bg-gray-50">
+        <div className="flex min-h-screen items-center justify-center">
           <div className="bg-white p-8 rounded shadow w-full max-w-md text-center">
             <h1 className="text-2xl font-bold mb-4 text-red-600">Error</h1>
             <p className="text-gray-700 mb-4">{error}</p>
             <button 
               onClick={() => window.location.reload()}
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              className="px-4 py-2 btn-gradient text-white rounded"
             >
               Retry
             </button>
@@ -265,7 +265,7 @@ export default function DashboardPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 py-8">
+      <div className="min-h-screen py-8">
         <div className="max-w-4xl mx-auto px-4">
           <h1 className="text-3xl font-bold mb-8 text-center">Your Dashboard</h1>
           
@@ -303,7 +303,7 @@ export default function DashboardPage() {
                 </p>
                 <button
                   onClick={() => router.push('/survey')}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-6 py-2 btn-gradient text-white rounded-lg transition-colors"
                 >
                   Start Survey
                 </button>
@@ -349,8 +349,8 @@ export default function DashboardPage() {
                 </p>
               </div>
             ) : isGeneratingAssessment ? (
-              <div className="flex items-center justify-center py-8">
-                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+              <div className="flex items-center justify-center py-8" role="status" aria-live="polite">
+                <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[var(--brand-puce)]" aria-hidden="true"></div>
                 <span className="ml-3 text-gray-600">Generating your personalized assessment...</span>
               </div>
             ) : assessment ? (
@@ -391,7 +391,7 @@ export default function DashboardPage() {
                 <p className="text-gray-600 mb-4">No assessment available</p>
                 <button
                   onClick={() => window.location.reload()}
-                  className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  className="px-6 py-2 btn-gradient text-white rounded-lg transition-colors"
                 >
                   Generate Assessment
                 </button>

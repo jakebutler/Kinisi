@@ -37,7 +37,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gray-50">
+    <div className="flex min-h-screen items-center justify-center">
       <form
         className="w-full max-w-sm bg-white p-8 rounded shadow"
         onSubmit={handleLogin}
@@ -71,16 +71,16 @@ export default function LoginPage() {
         {error && <div className="mb-2 text-red-600">{error}</div>}
         <button
           type="submit"
-          className="w-full bg-blue-600 text-white py-2 rounded disabled:opacity-50"
+          className="w-full btn-gradient text-white py-2 rounded disabled:opacity-50"
           disabled={loading}
         >
           {loading ? "Signing in..." : "Sign In"}
         </button>
         <div className="flex justify-between mt-4 text-sm">
-          <Link href="/register" className="text-blue-600 hover:underline">
+          <Link href="/register" className="text-[var(--brand-puce)] hover:underline">
             Register
           </Link>
-          <Link href="/forgot-password" className="text-blue-600 hover:underline">
+          <Link href="/forgot-password" className="text-[var(--brand-puce)] hover:underline">
             Forgot Password?
           </Link>
         </div>
