@@ -7,8 +7,13 @@ import { mockSurveyResponse } from '../../../__fixtures__/surveys.fixture';
 // Mock Supabase client
 jest.mock('../../../utils/supabaseClient', () => ({
   supabase: {
-    from: jest.fn()
-  }
+    from: jest.fn(),
+    auth: {
+      getSession: jest
+        .fn()
+        .mockResolvedValue({ data: { session: { access_token: 'test-access-token' } }, error: null }),
+    },
+  },
 }));
 
 // Mock fetch for API calls
@@ -19,6 +24,13 @@ const mockSupabase = supabase as jest.Mocked<typeof supabase>;
 describe('assessment utilities', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    // Jest config uses resetMocks: true, so re-apply auth.getSession mock each test
+    if ((mockSupabase as any).auth && typeof (mockSupabase as any).auth.getSession === 'function') {
+      (mockSupabase as any).auth.getSession.mockResolvedValue({
+        data: { session: { access_token: 'test-access-token' } },
+        error: null,
+      });
+    }
   });
 
   describe('getLatestAssessment', () => {
@@ -143,16 +155,21 @@ describe('assessment utilities', () => {
           updated_at: '',
         });
         expect(result.error).toBeNull();
-        expect(mockFetch).toHaveBeenCalledWith('/api/assessment', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify({
-            userId: 'test-user-id-123',
-            surveyResponses: mockSurveyResponse.response,
-          }),
-        });
+        expect(mockFetch).toHaveBeenCalledWith(
+          '/api/assessment',
+          expect.objectContaining({
+            method: 'POST',
+            credentials: 'include',
+            headers: expect.objectContaining({
+              'Content-Type': 'application/json',
+              Authorization: expect.stringMatching(/^Bearer\s.+/),
+            }),
+            body: JSON.stringify({
+              userId: 'test-user-id-123',
+              surveyResponses: mockSurveyResponse.response,
+            }),
+          })
+        );
       });
     });
 

@@ -29,11 +29,16 @@ export async function getLatestAssessment(userId: string): Promise<{ data: Asses
 
 export async function generateAndStoreAssessment(userId: string, surveyResponses: SurveyResponses): Promise<{ data: Assessment | null, error: Error | null }> {
   try {
+    // Ensure server route receives auth via cookies and Authorization header
+    const { data: sess } = await supabase.auth.getSession();
+    const accessToken = sess?.session?.access_token;
     const response = await fetch('/api/assessment', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
       },
+      credentials: 'include',
       body: JSON.stringify({ userId, surveyResponses }),
     });
 

@@ -1,5 +1,6 @@
 // utils/programDataHelpers.ts
 import { supabase } from "./supabaseClient";
+import type { SupabaseClient } from "@supabase/supabase-js";
 import { Exercise } from "./types/programTypes";
 
 // Save a new program to Supabase
@@ -8,8 +9,9 @@ type NewProgram = {
   program_json: any;
   status?: string;
 };
-export async function saveExerciseProgram(program: NewProgram) {
-  const { data, error } = await supabase.from("exercise_programs").insert([program]).select();
+export async function saveExerciseProgram(program: NewProgram, client?: SupabaseClient) {
+  const c = client ?? supabase;
+  const { data, error } = await c.from("exercise_programs").insert([program]).select();
   if (error) throw new Error(error.message);
   return data?.[0];
 }
@@ -134,8 +136,9 @@ export async function updateProgramJson(id: string, program_json: any, status?: 
 export async function getAvailableExercises(filter?: {
   primary_muscles?: string[];
   equipment?: string[];
-}): Promise<Exercise[]> {
-  let query = supabase.from("exercises").select("exercise_id, name, target_muscles, equipments");
+}, client?: SupabaseClient): Promise<Exercise[]> {
+  const c = client ?? supabase;
+  let query = c.from("exercises").select("exercise_id, name, target_muscles, equipments");
   if (filter?.primary_muscles && filter.primary_muscles.length > 0) {
     // For backward compatibility, map primary_muscles to target_muscles
     query = query.in("target_muscles", filter.primary_muscles);

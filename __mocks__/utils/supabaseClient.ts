@@ -45,7 +45,9 @@ const mockSupabase = {
   })),
   rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
   auth: {
-    getSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+    getSession: jest
+      .fn()
+      .mockResolvedValue({ data: { session: { access_token: 'test-access-token' } }, error: null }),
     getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
     signUp: jest.fn().mockResolvedValue({ data: null, error: null }),
     signInWithPassword: jest.fn().mockResolvedValue({ data: null, error: null }),
