@@ -27,7 +27,14 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const { assessment, exerciseFilter, userId } = body;
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const { assessment, exerciseFilter } = body;
 
     // Validate assessment
     if (!assessment || typeof assessment !== 'string') {
@@ -46,18 +53,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    // Validate userId (temporary until auth context is wired here)
-    if (!userId || typeof userId !== 'string') {
-      console.error('[400] Missing or invalid userId:', { userId, type: typeof userId });
-      return NextResponse.json(
-        { error: "userId is required and must be a string" },
-        { status: 400 }
-      );
-    }
-
-    // Build authenticated Supabase client from cookies for RLS-protected reads
-    const supabase = await createSupabaseServerClient();
 
     // Fetch available exercises
     let exercises: Exercise[] = [];
@@ -120,12 +115,10 @@ export async function POST(req: NextRequest) {
     }
 
     // Save generated program to Supabase
-    // TODO: Replace with user_id from auth context rather than request body
-    const user_id = userId as string;
     const { saveExerciseProgram } = await import("@/utils/programDataHelpers");
     try {
       const saved = await saveExerciseProgram({
-        user_id,
+        user_id: user.id,
         program_json: llmResponse,
         status: "draft"
       }, supabase);
