@@ -172,7 +172,7 @@ export default function BetaSignupForm() {
               disabled={submitting}
               className="h-11 mt-2 rounded-md bg-black text-white dark:bg-white dark:text-black hover:opacity-90 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              {submitting ? 'Submitting…' : 'Request Access'}
+              {submitting ? 'Submitting…' : 'Join the Beta'}
             </button>
           </div>
         </>

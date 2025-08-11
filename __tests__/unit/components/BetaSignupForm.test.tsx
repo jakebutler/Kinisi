@@ -42,7 +42,7 @@ describe('BetaSignupForm', () => {
     render(<BetaSignupForm />);
 
     const emailInput = screen.getByLabelText(/Email/i);
-    const submitBtn = screen.getByRole('button', { name: /Request Access/i });
+    const submitBtn = screen.getByRole('button', { name: /Join the Beta/i });
 
     await user.type(emailInput, 'alice@example.com');
     await user.click(submitBtn);
@@ -68,7 +68,7 @@ describe('BetaSignupForm', () => {
     render(<BetaSignupForm />);
 
     await user.type(screen.getByLabelText(/Email/i), 'bob@example.com');
-    await user.click(screen.getByRole('button', { name: /Request Access/i }));
+    await user.click(screen.getByRole('button', { name: /Join the Beta/i }));
 
     await screen.findByRole('heading', { name: /Thanks — you’re on the early access list/i });
 
@@ -91,7 +91,7 @@ describe('BetaSignupForm', () => {
     render(<BetaSignupForm />);
 
     await user.type(screen.getByLabelText(/Email/i), 'carol@example.com');
-    await user.click(screen.getByRole('button', { name: /Request Access/i }));
+    await user.click(screen.getByRole('button', { name: /Join the Beta/i }));
 
     await waitFor(() => {
       expect(screen.getByRole('alert')).toHaveTextContent(/temporarily unavailable|something went wrong|unable to submit/i);

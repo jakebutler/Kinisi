@@ -96,21 +96,21 @@ export default function ProgramActions({ programId, status }: { programId: strin
           <button
             onClick={onSubmitFeedback}
             disabled={disabled}
-            className={`px-4 py-2 rounded text-white ${disabled ? "bg-gray-400" : "bg-blue-600 hover:bg-blue-700"}`}
+            className={`px-4 py-2 rounded text-white disabled:opacity-50 ${disabled ? "bg-gray-400" : "btn-gradient"}`}
           >
             {loading === "feedback" ? "Submitting..." : "Submit Feedback"}
           </button>
           <button
             onClick={onRevise}
             disabled={disabled}
-            className={`px-4 py-2 rounded text-white ${disabled ? "bg-gray-400" : "bg-purple-600 hover:bg-purple-700"}`}
+            className={`px-4 py-2 rounded text-white disabled:opacity-50 ${disabled ? "bg-gray-400" : "btn-gradient"}`}
           >
             {loading === "revise" ? "Revising..." : "Revise Program"}
           </button>
           <button
             onClick={onApprove}
             disabled={disabled || status === "approved"}
-            className={`px-4 py-2 rounded text-white ${disabled || status === "approved" ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"}`}
+            className={`px-4 py-2 rounded text-white disabled:opacity-50 ${disabled || status === "approved" ? "bg-gray-400" : "bg-green-600 hover:bg-green-700"}`}
             title={status === "approved" ? "Already approved" : "Approve the current program"}
           >
             {loading === "approve" ? "Approving..." : status === "approved" ? "Approved" : "Approve"}

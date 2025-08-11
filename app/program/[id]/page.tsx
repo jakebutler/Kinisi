@@ -11,7 +11,7 @@ export default async function ProgramDetailsPage({ params }: { params: Promise<{
       <div className="max-w-4xl mx-auto p-6">
         <h1 className="text-2xl font-semibold mb-2">Program</h1>
         <p className="text-red-600">Missing program id.</p>
-        <div className="mt-4"><Link href="/dashboard" className="text-blue-600 underline">Back to dashboard</Link></div>
+        <div className="mt-4"><Link href="/dashboard" className="text-[var(--brand-puce)] underline">Back to dashboard</Link></div>
       </div>
     );
   }
@@ -28,7 +28,7 @@ export default async function ProgramDetailsPage({ params }: { params: Promise<{
       <div className="max-w-4xl mx-auto p-6">
         <h1 className="text-2xl font-semibold mb-2">Program</h1>
         <p className="text-gray-700">Program not found.</p>
-        <div className="mt-4"><Link href="/dashboard" className="text-blue-600 underline">Back to dashboard</Link></div>
+        <div className="mt-4"><Link href="/dashboard" className="text-[var(--brand-puce)] underline">Back to dashboard</Link></div>
       </div>
     );
   }
