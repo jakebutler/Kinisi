@@ -1,31 +1,40 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { reviseAssessmentWithFeedback } from '../../../../utils/assessmentChain';
-import { supabase } from '../../../../utils/supabaseClient';
+import { createSupabaseServerClient } from '../../../../utils/supabaseServer';
 
 // POST /api/assessment/feedback
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
 
-    const { currentAssessment, feedback, surveyResponses, userId, revisionOfAssessmentId } = body;
+    const { currentAssessment, feedback, surveyResponses, revisionOfAssessmentId } = body;
 
     // 1. Validate required fields
-    if (!currentAssessment || !feedback || !surveyResponses || !userId) {
+    if (!currentAssessment || !feedback || !surveyResponses) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    }
+
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // 2. Find the latest survey_response_id for this user
     const { data: surveyRows, error: surveyError } = await supabase
       .from("survey_responses")
       .select("id")
-      .eq("user_id", userId)
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1)
       .maybeSingle(); // Use maybeSingle as we expect 0 or 1 result
 
     if (surveyError) {
-        console.error('Database error fetching survey response:', surveyError);
-        return NextResponse.json({ error: "Database error fetching survey response" }, { status: 500 });
+      console.error('Database error fetching survey response:', surveyError);
+      return NextResponse.json({ error: "Database error fetching survey response" }, { status: 500 });
     }
 
     if (!surveyRows) { // surveyRows will be null if no rows are found with maybeSingle()
@@ -47,7 +56,7 @@ export async function POST(req: NextRequest) {
     
     // 4. Insert or Update assessment based on revisionOfAssessmentId
     const dataToSave = {
-        user_id: userId,
+        user_id: user.id,
         survey_response_id: surveyResponseId, // Use the correctly extracted ID
         assessment: revisedAssessment,
         feedback: feedback, // Store the feedback that led to this assessment
@@ -65,6 +74,7 @@ export async function POST(req: NextRequest) {
                 // For this logic, we assume revisionOfAssessmentId *is* the record being updated
             })
             .eq("id", revisionOfAssessmentId)
+            .eq("user_id", user.id)
             .select()
             .single(); // Expecting the updated row back
 

@@ -1,22 +1,35 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { supabase } from '../../../../utils/supabaseClient';
+import { NextResponse } from 'next/server';
+import { createSupabaseServerClient } from '../../../../utils/supabaseServer';
 
 // POST /api/assessment/approve
-export async function POST(request: NextRequest) {
+export async function POST() {
   try {
-    const { userId } = await request.json();
-
-    if (!userId) {
-      return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
+    const supabase = await createSupabaseServerClient();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // Update the latest assessment for this user to approved
+    // Find the latest assessment id for this user
+    const { data: latest, error: latestError } = await supabase
+      .from('assessments')
+      .select('id')
+      .eq('user_id', user.id)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (latestError || !latest) {
+      return NextResponse.json({ error: 'No assessment found for user' }, { status: 404 });
+    }
+
     const { data, error } = await supabase
       .from('assessments')
       .update({ approved: true })
-      .eq('user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(1)
+      .eq('id', latest.id)
       .select();
 
     if (error) {
@@ -25,8 +38,7 @@ export async function POST(request: NextRequest) {
     }
 
     if (!data || data.length === 0) {
-      console.error(`No assessment found to approve for userId: ${userId}`);
-      return NextResponse.json({ error: 'No assessment found for user' }, { status: 404 });
+      return NextResponse.json({ error: 'No assessment updated' }, { status: 404 });
     }
 
     return NextResponse.json({ success: true, data });

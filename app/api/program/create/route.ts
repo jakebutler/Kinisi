@@ -4,6 +4,9 @@ import { buildProgramPrompt } from "@/utils/programPromptTemplate";
 import { Exercise, ExerciseProgramPayload } from "@/utils/types/programTypes";
 import { getAvailableExercises } from "@/utils/programDataHelpers";
 import { callLLMWithPrompt } from "@/utils/llm";
+import { createSupabaseServerClient } from "@/utils/supabaseServer";
+
+export const dynamic = 'force-dynamic';
 
 export async function POST(req: NextRequest) {
   try {
@@ -53,10 +56,13 @@ export async function POST(req: NextRequest) {
       );
     }
 
+    // Build authenticated Supabase client from cookies for RLS-protected reads
+    const supabase = await createSupabaseServerClient();
+
     // Fetch available exercises
     let exercises: Exercise[] = [];
     try {
-      exercises = await getAvailableExercises(exerciseFilter);
+      exercises = await getAvailableExercises(exerciseFilter, supabase);
       if (!Array.isArray(exercises) || exercises.length === 0) {
         console.error('[404] No exercises found for filter:', exerciseFilter);
         return NextResponse.json(
@@ -122,7 +128,7 @@ export async function POST(req: NextRequest) {
         user_id,
         program_json: llmResponse,
         status: "draft"
-      });
+      }, supabase);
       console.log('✅ Program saved successfully:', { id: saved.id });
       return NextResponse.json(saved, { status: 201 });
     } catch (e: unknown) {

@@ -1,14 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { generateAssessmentFromSurvey } from '../../../utils/assessmentChain';
-import { supabase } from '../../../utils/supabaseClient';
+import { createSupabaseServerClient } from '../../../utils/supabaseServer';
+
+export const dynamic = 'force-dynamic';
 
 // POST /api/assessment - Generate personalized assessment
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { surveyResponses, userId } = body;
-    if (!surveyResponses || !userId) {
-      return NextResponse.json({ error: 'Missing surveyResponses or userId' }, { status: 400 });
+    const { surveyResponses } = body;
+    if (!surveyResponses) {
+      return NextResponse.json({ error: 'Missing surveyResponses' }, { status: 400 });
+    }
+
+    const supabase = await createSupabaseServerClient();
+    // Temporary debug: log cookie context and project URL
+    try {
+      const dbgUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+      // next/headers cookies are not directly accessible here, but @supabase/ssr will read them.
+      console.log('[assessment] Using SUPABASE_URL:', dbgUrl);
+    } catch {}
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+    const bearer = authHeader && authHeader.startsWith('Bearer ')
+      ? authHeader.slice('Bearer '.length)
+      : undefined;
+    const {
+      data: { user },
+      error: userError,
+    } = bearer ? await supabase.auth.getUser(bearer) : await supabase.auth.getUser();
+    if (userError || !user) {
+      console.warn('[assessment] Unauthorized. userError:', userError?.message, 'user null?', !user);
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     // Call LangChain-powered assessment generator
@@ -18,7 +40,7 @@ export async function POST(req: NextRequest) {
     const { data: surveyRows, error: surveyError } = await supabase
       .from("survey_responses")
       .select("id")
-      .eq("user_id", userId)
+      .eq("user_id", user.id)
       .order("created_at", { ascending: false })
       .limit(1);
 
@@ -33,7 +55,7 @@ export async function POST(req: NextRequest) {
       .from("assessments")
       .insert([
         {
-          user_id: userId,
+          user_id: user.id,
           survey_response_id,
           assessment,
         }
