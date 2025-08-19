@@ -5,6 +5,9 @@ import { Resend } from 'resend';
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 export async function POST(request: Request) {
+  if (!supabaseAdmin) {
+    return NextResponse.json({ error: 'Supabase admin client is not initialized.' }, { status: 500 });
+  }
   try {
     const { email, password, accessCode } = await request.json();
 
