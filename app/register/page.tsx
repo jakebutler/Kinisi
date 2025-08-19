@@ -1,42 +1,38 @@
 "use client";
 import { useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/utils/supabaseClient";
 import Link from "next/link";
 
 export default function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [accessCode, setAccessCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
-  const router = useRouter();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
     setSuccess("");
-    
-    const { data, error } = await supabase.auth.signUp({ email, password });
-    
-    if (error) {
-      setError(error.message);
-      setLoading(false);
+
+    const response = await fetch('/api/register', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password, accessCode }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      setSuccess("Registration successful! Please check your email for a confirmation link.");
     } else {
-      // For new registrations, we want to redirect to survey after email confirmation
-      // Check if email confirmation is required
-      if (data.user && !data.user.email_confirmed_at) {
-        setSuccess("Check your email for a confirmation link. After confirming, you'll be redirected to complete your profile.");
-        setLoading(false);
-      } else if (data.user) {
-        // If email is already confirmed (auto-confirm enabled), redirect to survey
-        setSuccess("Registration successful! Redirecting to survey...");
-        setTimeout(() => {
-          router.push('/survey');
-        }, 2000);
-      }
+      setError(data.error || "An error occurred during registration.");
     }
+
+    setLoading(false);
   };
 
   return (
@@ -69,6 +65,17 @@ export default function RegisterPage() {
             onChange={e => setPassword(e.target.value)}
             required
             autoComplete="new-password"
+          />
+        </label>
+        <label className="block mb-4" htmlFor="accessCode">
+          Access Code
+          <input
+            id="accessCode"
+            type="password"
+            className="mt-1 block w-full border rounded px-3 py-2"
+            value={accessCode}
+            onChange={e => setAccessCode(e.target.value)}
+            required
           />
         </label>
         {error && <div className="mb-2 text-red-600">{error}</div>}
