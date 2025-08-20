@@ -1,12 +1,41 @@
+import 'server-only';
 import { NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/utils/supabaseAdmin';
 import { Resend } from 'resend';
 
 export const runtime = 'nodejs';
 
+const RATE_LIMIT_WINDOW_MS = 60_000;
+const RATE_LIMIT_MAX = 5;
+const rateLimiter = new Map<string, { count: number; start: number }>();
+
+function getClientIp(request: Request): string {
+  const xf = request.headers.get('x-forwarded-for');
+  if (xf) return xf.split(',')[0].trim();
+  const xr = request.headers.get('x-real-ip');
+  if (xr) return xr;
+  return 'unknown';
+}
+
+function isRateLimited(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimiter.get(ip);
+  if (!entry || now - entry.start > RATE_LIMIT_WINDOW_MS) {
+    rateLimiter.set(ip, { count: 1, start: now });
+    return false;
+  }
+  entry.count += 1;
+  rateLimiter.set(ip, entry);
+  return entry.count > RATE_LIMIT_MAX;
+}
+
 export async function POST(request: Request) {
   if (!supabaseAdmin) {
     return NextResponse.json({ error: 'Supabase admin client is not initialized.' }, { status: 500 });
+  }
+  const ip = getClientIp(request);
+  if (isRateLimited(ip)) {
+    return NextResponse.json({ error: 'Too many requests. Please try again later.' }, { status: 429 });
   }
   try {
     const { email, password, accessCode } = await request.json();
@@ -31,20 +60,29 @@ export async function POST(request: Request) {
     });
 
     if (createUserError) {
-      return NextResponse.json({ error: createUserError.message }, { status: 400 });
+      const msg = (createUserError as any)?.message?.toLowerCase?.() || '';
+      const isConflict = msg.includes('already') || msg.includes('exists') || msg.includes('duplicate');
+      return NextResponse.json(
+        { error: isConflict ? 'Email already registered.' : 'Unable to create user.' },
+        { status: isConflict ? 409 : 400 }
+      );
     }
     if(!user) {
-        return NextResponse.json({ error: 'User not found after creation.' }, { status: 500 });
+        return NextResponse.json({ error: 'Unable to create user.' }, { status: 500 });
     }
 
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || request.headers.get('origin') || undefined;
     const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
         type: 'signup',
         email: email,
         password: password,
+        options: {
+          redirectTo: siteUrl ? `${siteUrl}/survey` : undefined,
+        },
     });
 
     if (linkError) {
-        return NextResponse.json({ error: linkError.message }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to generate confirmation link.' }, { status: 500 });
     }
 
     const confirmationLink = linkData?.properties?.action_link;
@@ -56,10 +94,14 @@ export async function POST(request: Request) {
     if (!resendApiKey) {
       return NextResponse.json({ error: 'Email service not configured.' }, { status: 500 });
     }
+    const emailFrom = process.env.EMAIL_FROM;
+    if (!emailFrom) {
+      return NextResponse.json({ error: 'Email service not configured.' }, { status: 500 });
+    }
     const resend = new Resend(resendApiKey);
     try {
       await resend.emails.send({
-        from: 'onboarding@resend.dev',
+        from: emailFrom,
         to: email,
         subject: 'Confirm your email address',
         html: `<p>Please confirm your email address by clicking on this link: <a href="${confirmationLink}">Confirm Email</a></p>`,
@@ -69,7 +111,7 @@ export async function POST(request: Request) {
     }
 
 
-    return NextResponse.json({ success: true, user }, { status: 200 });
+    return NextResponse.json({ success: true }, { status: 200 });
   } catch (error) {
     return NextResponse.json({ error: 'Unable to process request.' }, { status: 500 });
   }

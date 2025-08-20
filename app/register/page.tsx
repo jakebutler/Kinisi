@@ -15,24 +15,31 @@ export default function RegisterPage() {
     setLoading(true);
     setError("");
     setSuccess("");
+    try {
+      const response = await fetch('/api/register', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password, accessCode }),
+      });
 
-    const response = await fetch('/api/register', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ email, password, accessCode }),
-    });
+      let data: any = null;
+      try {
+        data = await response.json();
+      } catch {}
 
-    const data = await response.json();
+      if (!response.ok) {
+        setError(data?.error || "An error occurred during registration.");
+        return;
+      }
 
-    if (response.ok) {
       setSuccess("Registration successful! Please check your email for a confirmation link.");
-    } else {
-      setError(data.error || "An error occurred during registration.");
+    } catch {
+      setError("Network error. Please try again.");
+    } finally {
+      setLoading(false);
     }
-
-    setLoading(false);
   };
 
   return (
