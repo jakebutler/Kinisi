@@ -17,8 +17,9 @@ export async function saveExerciseProgram(program: NewProgram, client?: Supabase
 }
 
 // Fetch a program by user ID (gets the latest program for a user)
-export async function getProgramByUserId(userId: string) {
-  const { data: program, error: programError } = await supabase
+export async function getProgramByUserId(userId: string, client?: SupabaseClient) {
+  const c = client ?? supabase;
+  const { data: program, error: programError } = await c
     .from("exercise_programs")
     .select("*")
     .eq("user_id", userId)
@@ -30,13 +31,14 @@ export async function getProgramByUserId(userId: string) {
   if (programError) throw new Error(programError.message);
   if (!program) return null;
 
-  return await getProgramById(program.id);
+  return await getProgramById(program.id, c);
 }
 
 // Fetch a program by ID
-export async function getProgramById(id: string) {
+export async function getProgramById(id: string, client?: SupabaseClient) {
+  const c = client ?? supabase;
   // 1. Fetch the program
-  const { data: program, error: programError } = await supabase
+  const { data: program, error: programError } = await c
     .from("exercise_programs")
     .select("*")
     .eq("id", id)
@@ -47,7 +49,7 @@ export async function getProgramById(id: string) {
   if (!program) return null;
 
   // 2. Fetch all sessions for this program
-  const { data: sessions, error: sessionsError } = await supabase
+  const { data: sessions, error: sessionsError } = await c
     .from("sessions")
     .select("*")
     .eq("program_id", id);
@@ -57,7 +59,7 @@ export async function getProgramById(id: string) {
   const sessionIds = sessions.map((s: any) => s.id);
   let sessionExercises: any[] = [];
   if (sessionIds.length > 0) {
-    const { data: exercises, error: exercisesError } = await supabase
+    const { data: exercises, error: exercisesError } = await c
       .from("session_exercises")
       .select("*")
       .in("session_id", sessionIds);
@@ -109,8 +111,9 @@ export async function saveProgramFeedback({
 }
 
 // Approve a program (set status to 'approved')
-export async function approveProgram(id: string) {
-  const { data, error } = await supabase.from("exercise_programs").update({ status: "approved" }).eq("id", id).select();
+export async function approveProgram(id: string, client?: SupabaseClient) {
+  const c = client ?? supabase;
+  const { data, error } = await c.from("exercise_programs").update({ status: "approved" }).eq("id", id).select();
   if (error) throw new Error(error.message);
   return data?.[0];
 }
@@ -162,10 +165,11 @@ export async function getAvailableExercises(filter?: {
  * Fetch exercise names for a set of exercise IDs.
  * Returns a map of exercise_id -> name.
  */
-export async function getExerciseNamesByIds(ids: string[]): Promise<Record<string, string>> {
+export async function getExerciseNamesByIds(ids: string[], client?: SupabaseClient): Promise<Record<string, string>> {
+  const c = client ?? supabase;
   const unique = Array.from(new Set((ids || []).filter(Boolean)));
   if (unique.length === 0) return {};
-  const { data, error } = await supabase
+  const { data, error } = await c
     .from("exercises")
     .select("exercise_id, name")
     .in("exercise_id", unique);

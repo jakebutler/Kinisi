@@ -53,6 +53,19 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid access code.' }, { status: 401 });
     }
 
+    // Early email service validation to avoid creating a user when email cannot be sent
+    const resendApiKey = process.env.RESEND_API_KEY;
+    const emailFrom = process.env.EMAIL_FROM;
+    if (!resendApiKey || !emailFrom) {
+      if (process.env.NODE_ENV !== 'production') {
+        const missing: string[] = [];
+        if (!resendApiKey) missing.push('RESEND_API_KEY');
+        if (!emailFrom) missing.push('EMAIL_FROM');
+        console.warn('[register] Missing email configuration:', missing.join(', '));
+      }
+      return NextResponse.json({ error: 'Email service not configured.' }, { status: 500 });
+    }
+
     const { data: { user }, error: createUserError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
@@ -90,14 +103,6 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Failed to generate confirmation link.' }, { status: 500 });
     }
 
-    const resendApiKey = process.env.RESEND_API_KEY;
-    if (!resendApiKey) {
-      return NextResponse.json({ error: 'Email service not configured.' }, { status: 500 });
-    }
-    const emailFrom = process.env.EMAIL_FROM;
-    if (!emailFrom) {
-      return NextResponse.json({ error: 'Email service not configured.' }, { status: 500 });
-    }
     const resend = new Resend(resendApiKey);
     try {
       await resend.emails.send({
@@ -107,6 +112,11 @@ export async function POST(request: Request) {
         html: `<p>Please confirm your email address by clicking on this link: <a href="${confirmationLink}">Confirm Email</a></p>`,
       });
     } catch (e) {
+      if (process.env.NODE_ENV !== 'production') {
+        console.warn('[register] Resend send failed');
+      }
+      // Roll back the created user so the client can retry without hitting a duplicate email conflict
+      try { await supabaseAdmin.auth.admin.deleteUser(user.id); } catch {}
       return NextResponse.json({ error: 'Failed to send confirmation email.' }, { status: 500 });
     }
 

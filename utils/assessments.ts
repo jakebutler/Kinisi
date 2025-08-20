@@ -14,13 +14,14 @@ export type Assessment = {
 
 export async function getLatestAssessment(userId: string): Promise<{ data: Assessment | null, error: Error | null }> {
   try {
-    const { data, error } = await supabase
+    const chain = supabase
       .from('assessments')
       .select('*')
       .eq('user_id', userId)
       .order('created_at', { ascending: false })
-      .limit(1)
-      .single();
+      .limit(1) as any;
+    // Use maybeSingle when available to avoid 406, fallback to single for older mocks/tests
+    const { data, error } = typeof chain.maybeSingle === 'function' ? await chain.maybeSingle() : await chain.single();
     return handleApiError(data, error);
   } catch (error: any) {
     return { data: null, error: error instanceof Error ? error : new Error(error?.message || String(error)) };
@@ -43,7 +44,12 @@ export async function generateAndStoreAssessment(userId: string, surveyResponses
     });
 
     if (!response.ok) {
-      return { data: null, error: new Error('Failed to generate assessment') };
+      let msg = 'Failed to generate assessment';
+      try {
+        const err = await response.json();
+        if (err?.error) msg = err.error;
+      } catch {}
+      return { data: null, error: new Error(msg) };
     }
 
     const result = await response.json();

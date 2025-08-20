@@ -1,3 +1,4 @@
+import 'server-only';
 import { NextRequest, NextResponse } from 'next/server';
 import { generateAssessmentFromSurvey } from '../../../utils/assessmentChain';
 import { createSupabaseServerClient } from '../../../utils/supabaseServer';
@@ -34,7 +35,13 @@ export async function POST(req: NextRequest) {
     }
 
     // Call LangChain-powered assessment generator
-    const assessment = await generateAssessmentFromSurvey(surveyResponses);
+    let assessment: string;
+    try {
+      assessment = await generateAssessmentFromSurvey(surveyResponses);
+    } catch (e: any) {
+      console.error('[assessment] Generation failed:', e?.message || e);
+      return NextResponse.json({ error: 'Failed to generate assessment' }, { status: 500 });
+    }
 
     // Find the latest survey_response_id for this user
     const { data: surveyRows, error: surveyError } = await supabase
@@ -60,15 +67,16 @@ export async function POST(req: NextRequest) {
           assessment,
         }
       ])
-      .select();
+      .select()
+      .single();
 
-    if (insertError || !insertData || insertData.length === 0) {
+    if (insertError || !insertData) {
+      console.error('[assessment] Insert failed:', insertError?.message || insertError);
       return NextResponse.json({ error: "Failed to store assessment" }, { status: 500 });
     }
 
-    const assessmentId = insertData[0].id;
-
-    return NextResponse.json({ assessment, assessmentId });
+    // Return the inserted assessment row (aligns with client expectations in utils/assessments.ts)
+    return NextResponse.json(insertData);
   } catch (error) {
     console.error('Assessment API error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
