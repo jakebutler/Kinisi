@@ -8,14 +8,14 @@ Key features include:
 - AI-generated personalized assessments based on survey responses
 - Chat-based feedback mechanism for refining assessments
 
-**In Progress / Conceptual:**
-- Custom exercise program generation (API endpoint exists, but UI and full workflow are not implemented)
-- Session scheduling and calendar integration (planned, not yet implemented)
+**In Progress / Partially Implemented:**
+- Custom exercise program generation (API endpoint and basic flow exist; UI/UX continues to be refined)
+- Session scheduling and calendar integration (basic schedule generation, Google Calendar links, and .ics export available; FullCalendar UI present; ongoing polish)
 - Full program feedback and revision loop (planned)
 
 ## Technologies Used
 
--   **Frontend**: Next.js 14 with TypeScript.
+-   **Frontend**: Next.js 15 with TypeScript.
     *   *Why*: Next.js provides a robust framework for building server-rendered React applications, which is beneficial for SEO and initial page load performance. TypeScript adds static typing, improving code quality and maintainability, especially for larger projects.
 -   **Styling**: Tailwind CSS.
     *   *Why*: Tailwind CSS is a utility-first CSS framework that allows for rapid UI development directly within the HTML, promoting consistency and reducing the need for custom CSS.
@@ -46,8 +46,10 @@ The project follows a structure typical for Next.js applications, with additions
         -   `layout.tsx`: The main layout component for the application, often including global elements like navigation bars and footers.
         -   `globals.css`: Global styles for the application.
     -   `components/`: Contains reusable React components used throughout the application.
-        -   `context/`: React context providers. For instance, `AuthContext.tsx` manages the global authentication state (user session, loading status).
-        -   `ui/`: General user interface components, such as `NavBar.tsx` or `ProtectedRoute.tsx` (which restricts access to certain routes based on authentication status).
+        -   `context/`: React context providers (e.g., `AuthContext.tsx`).
+        -   `dashboard/`: Dashboard-specific UI.
+        -   `home/`: Landing page sections (Hero, Features, etc.).
+        -   `program/`: Program actions, calendar, and related UI.
     -   `public/`: Stores static assets like images, fonts, and icons that are served directly by the web server.
     -   `utils/`: Contains utility functions, helper scripts, and client library initializations.
         -   `supabaseClient.ts`: Initializes and exports the Supabase client, configured with the project's URL and anonymous key, enabling interaction with Supabase services (Auth, Database).
@@ -77,6 +79,13 @@ The project follows a structure typical for Next.js applications, with additions
 -   **Supabase usage pattern**:
     -   Use `createSupabaseServerClient()` within server API routes.
     -   Helpers in `utils/programDataHelpers.ts` require an explicit Supabase client parameter to avoid accidental client misuse.
+
+## Security & API Hardening
+
+-   Generic error responses for API routes; internal error details are never sent to clients. Full errors are logged server-side.
+-   Strict input validation and safe narrowing of `unknown` types (avoid `any`).
+-   Narrowed database selects and minimal response payloads.
+-   Client fetch calls send only required fields; unnecessary headers/bodies removed.
 
 ## Continuous Integration
 
@@ -189,7 +198,7 @@ describe('Program Creation Logic', () => {
 
 -   **Framework**: [Jest](https://jestjs.io/) is used as the primary testing framework, along with `ts-jest` to support tests written in TypeScript.
 -   **Location**: Test files are co-located within the `__tests__/` directory at the root of the project. Test filenames typically follow the pattern `*.test.ts` (e.g., `assessmentChain.test.ts`).
--   **Configuration**: Jest's configuration is defined in `jest.config.mjs`.
+-   **Configuration**: Jest's configuration is defined in `jest.config.cjs`.
 -   **Coverage**:
     *   The current test suite includes coverage for critical utility functions, particularly the AI-driven assessment logic in `utils/assessmentChain.ts` (see `__tests__/assessmentChain.test.ts`).
     *   API endpoint logic also has test coverage, for example, `__tests__/assessmentFeedbackApi.test.ts` tests the feedback mechanism for assessments.
@@ -224,6 +233,10 @@ The application leverages both internal APIs (built as part of the Next.js app) 
         4.  It then stores the generated `assessment`, along with the `userId` and `survey_response_id`, into the Supabase `assessments` table.
         5.  It returns the generated `assessment` and the new `assessmentId` to the client.
 -   Other API routes may exist for features like handling assessment feedback (e.g., `app/api/assessment/feedback/route.ts`).
+
+Additional APIs and utilities:
+-   Program generation and scheduling routes under `app/api/program/[id]/**` (approve, start-date, schedule, feedback, revise).
+-   RAG groundwork: `utils/rag.ts` and Supabase pgvector schema/migration enable retrieval-augmented prompts for richer context.
 
 ### External APIs / Third-Party Integrations
 
