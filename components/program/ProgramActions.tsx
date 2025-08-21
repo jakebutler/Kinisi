@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 export default function ProgramActions({ programId, status }: { programId: string; status?: string }) {
   const router = useRouter();
   const [feedback, setFeedback] = useState("");
-  const [loading, setLoading] = useState<"idle" | "feedback" | "revise" | "approve">("idle");
+  const [loading, setLoading] = useState<"idle" | "feedback" | "revise" | "approve" | "schedule">("idle");
   const [message, setMessage] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
@@ -79,6 +79,24 @@ export default function ProgramActions({ programId, status }: { programId: strin
     }
   };
 
+  const onGenerateSchedule = async () => {
+    setMessage(null);
+    setLoading("schedule");
+    try {
+      await postJson(`/api/program/${programId}/schedule`, {});
+      setMessage("Schedule generated.");
+      startTransition(() => router.refresh());
+    } catch (e: any) {
+      setMessage(e.message || "Failed to generate schedule");
+    } finally {
+      setLoading("idle");
+    }
+  };
+
+  const onViewCalendar = () => {
+    startTransition(() => router.push(`/program/${programId}/calendar`));
+  };
+
   const disabled = loading !== "idle" || isPending;
 
   return (
@@ -93,6 +111,22 @@ export default function ProgramActions({ programId, status }: { programId: strin
           onChange={(e) => setFeedback(e.target.value)}
         />
         <div className="flex flex-wrap gap-2">
+          <button
+            onClick={onGenerateSchedule}
+            disabled={disabled}
+            className={`px-4 py-2 rounded text-white disabled:opacity-50 ${disabled ? "bg-gray-400" : "btn-gradient"}`}
+            title="Generate a schedule with start times for each session"
+          >
+            {loading === "schedule" ? "Scheduling..." : "Generate Schedule"}
+          </button>
+          <button
+            onClick={onViewCalendar}
+            disabled={isPending}
+            className={`px-4 py-2 rounded text-white disabled:opacity-50 ${isPending ? "bg-gray-400" : "bg-indigo-600 hover:bg-indigo-700"}`}
+            title="View your scheduled sessions on the calendar"
+          >
+            View Calendar
+          </button>
           <button
             onClick={onSubmitFeedback}
             disabled={disabled}

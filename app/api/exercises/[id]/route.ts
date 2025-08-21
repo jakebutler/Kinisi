@@ -8,7 +8,7 @@ export async function GET(
 ) {
   try {
     const supabase = await createSupabaseServerClient();
-    const { id } = await params; // await the params
+    const { id } = await params;
 
     const { data: exercise, error } = await supabase
       .from('exercises')

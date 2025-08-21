@@ -4,13 +4,27 @@ import { getProgramById, getAvailableExercises, updateProgramJson } from "@/util
 import { buildProgramRevisionPrompt } from "@/utils/programPromptTemplate";
 import { Exercise, ExerciseProgramPayload } from "@/utils/types/programTypes";
 import { callLLMWithPrompt } from "@/utils/llm";
+import { createSupabaseServerClient } from "@/utils/supabaseServer";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = await params;
+    const { id } = (await params) || ({} as { id?: string });
 
     if (!id || typeof id !== "string") {
       return NextResponse.json({ error: "Missing or invalid program ID" }, { status: 400 });
+    }
+
+    // Validate UUID (404 on invalid)
+    const uuidRe = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
+    if (!uuidRe.test(id)) {
+      return NextResponse.json({ error: "Program not found" }, { status: 404 });
+    }
+
+    // Authenticated server client and ownership check
+    const supabase = await createSupabaseServerClient();
+    const { data: { user } } = await supabase.auth.getUser();
+    if (!user) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
 
     let body: unknown;
@@ -35,15 +49,18 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     }
 
     // Load current program
-    const program = await getProgramById(id);
+    const program = await getProgramById(id, supabase);
     if (!program || !program.program_json) {
       return NextResponse.json({ error: "Program not found" }, { status: 404 });
+    }
+    if (program.user_id !== user.id) {
+      return NextResponse.json({ error: "Forbidden" }, { status: 403 });
     }
 
     // Fetch available exercises (use filter if provided)
     let exercises: Exercise[] = [];
     try {
-      exercises = await getAvailableExercises(exerciseFilter);
+      exercises = await getAvailableExercises(exerciseFilter, supabase);
       if (!Array.isArray(exercises) || exercises.length === 0) {
         return NextResponse.json({ error: "No available exercises found for the given filter" }, { status: 404 });
       }
@@ -80,7 +97,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     // Save update (set status back to draft for approval flow)
     let updated;
     try {
-      updated = await updateProgramJson(id, revised, "draft");
+      updated = await updateProgramJson(id, revised, "draft", supabase);
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
       return NextResponse.json({ error: "Failed to save revised program: " + message }, { status: 500 });
@@ -92,3 +109,4 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
+

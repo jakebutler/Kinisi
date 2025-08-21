@@ -5,12 +5,12 @@ import { createSupabaseServerClient } from "@/utils/supabaseServer";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const paramsValue = await params;
-    if (!paramsValue || !paramsValue.id) {
-      console.error('[400] Missing id parameter:', paramsValue);
+    const awaited = await params;
+    if (!awaited || !awaited.id) {
+      console.error('[400] Missing id parameter');
       return NextResponse.json({ error: "Missing id parameter" }, { status: 400 });
     }
-    const { id } = paramsValue;
+    const { id } = awaited;
     if (!id || typeof id !== "string" || !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/.test(id)) {
       // Not a valid UUID, treat as not found
       console.error('[404] Invalid UUID or missing id:', id);
@@ -53,3 +53,4 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     return NextResponse.json({ error: "Internal server error: " + message }, { status: 500 });
   }
 }
+

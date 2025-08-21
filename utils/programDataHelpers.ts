@@ -93,7 +93,8 @@ export async function saveProgramFeedback({
   user_id: string;
   feedback: string;
   revision?: number;
-}) {
+}, client?: SupabaseClient) {
+  const c = client ?? supabase;
   const payload: Record<string, any> = {
     program_id,
     session_id,
@@ -101,7 +102,7 @@ export async function saveProgramFeedback({
     feedback,
     revision: typeof revision === 'number' ? revision : 1,
   };
-  const { data, error } = await supabase
+  const { data, error } = await c
     .from("program_feedback")
     .insert([payload])
     .select()
@@ -119,16 +120,44 @@ export async function approveProgram(id: string, client?: SupabaseClient) {
 }
 
 // Update a program's JSON (and optionally status)
-export async function updateProgramJson(id: string, program_json: any, status?: string) {
+export async function updateProgramJson(id: string, program_json: any, status?: string, client?: SupabaseClient) {
+  const c = client ?? supabase;
   const update: Record<string, any> = { program_json };
   if (status) update.status = status;
-  const { data, error } = await supabase
+  const { data, error } = await c
     .from("exercise_programs")
     .update(update)
     .eq("id", id)
     .select();
   if (error) throw new Error(error.message);
   return data?.[0];
+}
+
+// Update program fields including scheduling metadata
+export async function updateProgramFields(
+  id: string,
+  fields: {
+    program_json?: any;
+    scheduling_preferences?: any;
+    last_scheduled_at?: string; // ISO string
+    status?: string;
+  },
+  client?: SupabaseClient
+) {
+  const c = client ?? supabase;
+  const update: Record<string, any> = {};
+  if (typeof fields.program_json !== 'undefined') update.program_json = fields.program_json;
+  if (typeof fields.scheduling_preferences !== 'undefined') update.scheduling_preferences = fields.scheduling_preferences;
+  if (typeof fields.last_scheduled_at !== 'undefined') update.last_scheduled_at = fields.last_scheduled_at;
+  if (typeof fields.status !== 'undefined') update.status = fields.status;
+  const { data, error } = await c
+    .from("exercise_programs")
+    .update(update)
+    .eq("id", id)
+    .select()
+    .single();
+  if (error) throw new Error(error.message);
+  return data;
 }
 
 
