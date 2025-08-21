@@ -18,6 +18,12 @@ export interface ProgramSession {
   session: number;
   goal: string;
   exercises: ProgramExerciseInstance[];
+  /** Stable identifier for the session (e.g., "w1s2"). */
+  uid?: string;
+  /** ISO 8601 start datetime for the scheduled session. */
+  start_at?: string;
+  /** Planned duration in minutes for calendar/ICS export. */
+  duration_minutes?: number;
 }
 
 export interface ProgramWeek {

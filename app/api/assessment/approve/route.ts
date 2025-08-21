@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { createSupabaseServerClient } from '../../../../utils/supabaseServer';
 
 // POST /api/assessment/approve

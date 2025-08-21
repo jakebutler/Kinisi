@@ -1,5 +1,6 @@
 // app/api/exercises/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
 import { createSupabaseServerClient } from "@/utils/supabaseServer";
 
 export async function GET(
@@ -8,7 +9,7 @@ export async function GET(
 ) {
   try {
     const supabase = await createSupabaseServerClient();
-    const { id } = await params; // await the params
+    const { id } = await params;
 
     const { data: exercise, error } = await supabase
       .from('exercises')

@@ -1,4 +1,6 @@
 import "./globals.css";
+// Third-party CSS should be imported from entry points, not via @import in CSS
+// FullCalendar v6 does not export CSS files; styles are included via JS bundles.
 import { AuthProvider } from "@/components/context/AuthContext";
 import NavBar from "@/components/ui/NavBar";
 import Footer from "@/components/ui/Footer";
