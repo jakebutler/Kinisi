@@ -31,6 +31,7 @@ export async function POST() {
       .from('assessments')
       .update({ approved: true })
       .eq('id', latest.id)
+      .eq('user_id', user.id)
       .select();
 
     if (error) {

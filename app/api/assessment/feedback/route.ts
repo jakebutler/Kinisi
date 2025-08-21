@@ -11,8 +11,12 @@ export async function POST(req: NextRequest) {
     const { currentAssessment, feedback, surveyResponses, revisionOfAssessmentId } = body;
 
     // 1. Validate required fields
-    if (!currentAssessment || !feedback || !surveyResponses) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    const missing: string[] = [];
+    if (typeof currentAssessment !== 'string' || !currentAssessment.trim()) missing.push('currentAssessment');
+    if (typeof feedback !== 'string' || !feedback.trim()) missing.push('feedback');
+    if (typeof surveyResponses !== 'object' || surveyResponses === null) missing.push('surveyResponses');
+    if (missing.length) {
+      return NextResponse.json({ error: `Missing or invalid: ${missing.join(', ')}` }, { status: 400 });
     }
 
     const supabase = await createSupabaseServerClient();
@@ -46,11 +50,17 @@ export async function POST(req: NextRequest) {
     const surveyResponseId = surveyRows.id;
 
     // 3. Call LangChain-powered revision agent (Moved here)
-    const revisedAssessment = await reviseAssessmentWithFeedback({
-      currentAssessment,
-      feedback,
-      surveyResponses
-    });
+    let revisedAssessment: string;
+    try {
+      revisedAssessment = await reviseAssessmentWithFeedback({
+        currentAssessment,
+        feedback,
+        surveyResponses
+      });
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      return NextResponse.json({ error: 'Failed to revise assessment: ' + message }, { status: 500 });
+    }
 
     let assessmentResult;
     let assessmentError;
@@ -76,7 +86,7 @@ export async function POST(req: NextRequest) {
             })
             .eq("id", revisionOfAssessmentId)
             .eq("user_id", user.id)
-            .select()
+            .select("id, assessment")
             .single(); // Expecting the updated row back
 
         assessmentResult = data;
@@ -93,7 +103,7 @@ export async function POST(req: NextRequest) {
                     revision_of: null, // New assessments don't revise others
                 }
             ])
-            .select()
+            .select("id, assessment")
             .single(); // Expecting the inserted row back
 
         assessmentResult = data;

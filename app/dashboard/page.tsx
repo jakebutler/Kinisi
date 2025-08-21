@@ -211,10 +211,6 @@ export default function DashboardPage() {
     try {
       const response = await fetch('/api/assessment/approve', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ userId: user.id }),
       });
 
       if (!response.ok) {

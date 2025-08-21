@@ -21,8 +21,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       return NextResponse.json({ error: "Invalid JSON in request body" }, { status: 400 });
     }
     const { startDate } = (body || {}) as { startDate?: string };
-    if (!startDate || typeof startDate !== "string") {
-      return NextResponse.json({ error: "Missing or invalid startDate" }, { status: 400 });
+    if (typeof startDate !== "string" || !startDate.trim() || Number.isNaN(Date.parse(startDate))) {
+      return NextResponse.json({ error: "Missing or invalid startDate (expected ISO 8601 string)" }, { status: 400 });
     }
     const supabase = await createSupabaseServerClient();
     const { data: { user } } = await supabase.auth.getUser();
@@ -34,15 +34,16 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .update({ start_date: startDate })
       .eq("id", id)
       .eq("user_id", user.id)
-      .select();
+      .select()
+      .single();
     if (error) {
-      return NextResponse.json({ error: error.message }, { status: 500 });
+      console.error('[500] start-date update error:', error);
+      return NextResponse.json({ error: "Failed to update start date" }, { status: 500 });
     }
-    const updated = data?.[0];
-    if (!updated) {
+    if (!data) {
       return NextResponse.json({ error: "Program not found" }, { status: 404 });
     }
-    return NextResponse.json(updated, { status: 200 });
+    return NextResponse.json(data, { status: 200 });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json({ error: message }, { status: 500 });
