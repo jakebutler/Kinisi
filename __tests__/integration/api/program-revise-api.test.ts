@@ -1,9 +1,9 @@
 import { jest } from '@jest/globals';
 
-// Provide a mock server-side Supabase client
-const mockSupabase: any = {
+// Provide a single mutable mock server-side Supabase client (do not replace reference)
+let mockSupabase: any = {
   auth: {
-    getUser: jest.fn(async () => ({ data: { user: { id: 'user-1' } } })),
+    getUser: jest.fn(),
   },
 };
 
@@ -21,7 +21,7 @@ jest.mock('@/utils/validateProgramOutput', () => ({
   validateProgramOutput: jest.fn(),
 }));
 jest.mock('@/utils/supabaseServer', () => ({
-  createSupabaseServerClient: jest.fn(async () => mockSupabase),
+  createSupabaseServerClient: jest.fn(),
 }));
 
 import { POST as revisePOST } from '@/app/api/program/[id]/revise/route';
@@ -35,6 +35,7 @@ import { createSupabaseServerClient } from '@/utils/supabaseServer';
 const url = (id: string) => `http://localhost/api/program/${id}/revise`;
 
 describe('API: POST /api/program/[id]/revise', () => {
+  let supabaseInstance: any;
   const programId = '550e8400-e29b-41d4-a716-446655440000';
   const baseBody = { feedback: 'Please increase upper body volume by 1-2 sets.' };
   const mockProgram = { id: programId, program_json: { weeks: [] }, status: 'draft', user_id: 'user-1' };
@@ -52,10 +53,11 @@ describe('API: POST /api/program/[id]/revise', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    // Ensure server client mock is always set with a fresh instance
-    (createSupabaseServerClient as jest.Mock).mockImplementation(async () => ({
-      auth: { getUser: jest.fn().mockResolvedValue({ data: { user: { id: 'user-1' } } }) },
-    }));
+    // Reuse a single supabase instance; reset spies per test
+    mockSupabase.auth.getUser.mockReset();
+    mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
+    supabaseInstance = mockSupabase;
+    (createSupabaseServerClient as jest.Mock).mockResolvedValue(supabaseInstance);
     (getProgramById as jest.Mock).mockResolvedValue(mockProgram);
     (getAvailableExercises as jest.Mock).mockResolvedValue(mockExercises);
     (buildProgramRevisionPrompt as jest.Mock).mockReturnValue(mockPrompt);
@@ -83,10 +85,7 @@ describe('API: POST /api/program/[id]/revise', () => {
     expect(data).toEqual(mockUpdated);
 
     // Verify auth was called
-    const supabaseUsed = (createSupabaseServerClient as jest.Mock).mock.results[0]?.value as any;
-    if (supabaseUsed?.auth?.getUser) {
-      expect(supabaseUsed.auth.getUser).toHaveBeenCalled();
-    }
+    expect(supabaseInstance.auth.getUser).toHaveBeenCalled();
     expect(getProgramById).toHaveBeenCalledWith(programId, expect.anything());
     expect(getAvailableExercises).toHaveBeenCalled();
     expect(buildProgramRevisionPrompt).toHaveBeenCalledWith(mockProgram.program_json, baseBody.feedback, mockExercises, undefined);
