@@ -54,8 +54,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         revision
       }, supabase);
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      return NextResponse.json({ error: "Failed to save feedback: " + message }, { status: 500 });
+      console.error('Failed to save feedback:', e);
+      return NextResponse.json({ error: "Failed to save feedback" }, { status: 500 });
     }
     const resp = saved
       ? {
@@ -70,8 +70,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       : { ok: true };
     return NextResponse.json(resp, { status: 201 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error('Unexpected error in POST /api/program/[id]/feedback:', err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

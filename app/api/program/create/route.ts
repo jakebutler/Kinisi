@@ -68,9 +68,8 @@ export async function POST(req: NextRequest) {
       console.log('✅ Found exercises:', exercises.length);
     } catch (e: unknown) {
       console.error('[500] Failed to fetch exercises:', e);
-      const message = e instanceof Error ? e.message : String(e);
       return NextResponse.json(
-        { error: "Failed to fetch exercises: " + message },
+        { error: "Failed to fetch exercises" },
         { status: 500 }
       );
     }
@@ -96,9 +95,8 @@ export async function POST(req: NextRequest) {
       console.log('✅ LLM service responded:', { hasWeeks: !!llmResponse?.weeks });
     } catch (e: unknown) {
       console.error('[502] LLM service error:', e);
-      const message = e instanceof Error ? e.message : String(e);
       return NextResponse.json(
-        { error: "LLM call failed: " + message },
+        { error: "LLM call failed" },
         { status: 502 }
       );
     }
@@ -126,17 +124,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json(saved, { status: 201 });
     } catch (e: unknown) {
       console.error('[500] Failed to save program:', e);
-      const message = e instanceof Error ? e.message : String(e);
       return NextResponse.json(
-        { error: "Failed to save program: " + message },
+        { error: "Failed to save program" },
         { status: 500 }
       );
     }
   } catch (err: unknown) {
     console.error('[500] Unexpected error in POST /api/program/create:', err);
-    const message = err instanceof Error ? err.message : String(err);
     return NextResponse.json(
-      { error: "Internal server error: " + message },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

@@ -41,16 +41,16 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     try {
       approved = await approveProgram(id, supabase);
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      return NextResponse.json({ error: "Failed to approve program: " + message }, { status: 500 });
+      console.error('Failed to approve program:', e);
+      return NextResponse.json({ error: "Failed to approve program" }, { status: 500 });
     }
     if (!approved) {
       return NextResponse.json({ error: "Program not found or not permitted" }, { status: 404 });
     }
     return NextResponse.json(approved, { status: 200 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error('Unexpected error in POST /api/program/[id]/approve:', err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

@@ -74,8 +74,14 @@ export async function POST(request: Request) {
     });
 
     if (createUserError) {
-      const msg = (createUserError as any)?.message?.toLowerCase?.() || '';
-      const isConflict = msg.includes('already') || msg.includes('exists') || msg.includes('duplicate');
+      let rawMsg = '';
+      if (
+        createUserError &&
+        typeof (createUserError as { message?: unknown }).message === 'string'
+      ) {
+        rawMsg = ((createUserError as { message: string }).message).toLowerCase();
+      }
+      const isConflict = rawMsg.includes('already') || rawMsg.includes('exists') || rawMsg.includes('duplicate');
       return NextResponse.json(
         { error: isConflict ? 'Email already registered.' : 'Unable to create user.' },
         { status: isConflict ? 409 : 400 }
@@ -112,7 +118,7 @@ export async function POST(request: Request) {
         subject: 'Confirm your email address',
         html: `<p>Please confirm your email address by clicking on this link: <a href="${confirmationLink}">Confirm Email</a></p>`,
       });
-    } catch (e) {
+    } catch {
       if (process.env.NODE_ENV !== 'production') {
         console.warn('[register] Resend send failed');
       }
@@ -123,7 +129,8 @@ export async function POST(request: Request) {
 
 
     return NextResponse.json({ success: true }, { status: 200 });
-  } catch (error) {
+  } catch (err) {
+    console.error('[register] Unexpected error in POST /api/register:', err);
     return NextResponse.json({ error: 'Unable to process request.' }, { status: 500 });
   }
 }

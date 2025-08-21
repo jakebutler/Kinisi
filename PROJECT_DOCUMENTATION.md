@@ -243,9 +243,9 @@ The application leverages both internal APIs (built as part of the Next.js app) 
         *   Handled through the `utils/assessmentChain.ts` module.
         *   The [Langchain](https://js.langchain.com/) library (`langchain` npm package) is used as an abstraction layer to simplify interactions with the OpenAI API. This includes managing prompt templates, chaining calls to the LLM, and parsing outputs.
         *   API requests to OpenAI are made server-side (e.g., within API routes or server components) to protect the API key.
--   **Netlify**
+-   **Vercel**
     *   **Service Type**: Deployment and Hosting Platform
-    *   **Purpose**: Used for continuous deployment (CD) from the Git repository and for hosting the production version of the Kinisi web application. Netlify handles build processes for Next.js applications and provides features like CDN distribution, serverless functions (which can host Next.js API routes), and custom domain management.
+    *   **Purpose**: Used for preview and production deployments with tight Next.js integration. Vercel builds and hosts the app, provides serverless/Edge functions for API routes, global caching/CDN, and environment/secret management. Pull requests get automatic preview deployments.
 
 ## How the App Works - Core Loop
 

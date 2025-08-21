@@ -39,7 +39,7 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
 
     return NextResponse.json(saved, { status: 200 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: "Failed to schedule program: " + message }, { status: 500 });
+    console.error('Unexpected error in POST /api/program/[id]/schedule:', err);
+    return NextResponse.json({ error: "Failed to schedule program" }, { status: 500 });
   }
 }

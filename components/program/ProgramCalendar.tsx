@@ -6,7 +6,6 @@ import { buildGoogleCalendarUrl, buildICSForProgram, buildICSSession } from "@/u
 import dynamic from "next/dynamic";
 
 // Attempt dynamic import so the app still compiles without FullCalendar deps installed.
-// @ts-ignore - module may not exist until dependencies are installed
 const FullCalendarDynamic: any = dynamic(() => import("@fullcalendar/react").catch(() => ({} as any)), { ssr: false });
 
 export default function ProgramCalendar({ program, programId }: { program: any; programId: string }) {
@@ -17,7 +16,6 @@ export default function ProgramCalendar({ program, programId }: { program: any; 
     let mounted = true;
     async function loadPlugins() {
       try {
-        // @ts-ignore - these modules may not be present until deps installed
         const [day, time, inter] = await Promise.all([
           import("@fullcalendar/daygrid").catch(() => null),
           import("@fullcalendar/timegrid").catch(() => null),
@@ -100,7 +98,7 @@ export default function ProgramCalendar({ program, programId }: { program: any; 
         body: JSON.stringify({ uid, newStartAt: fmtLocal(newStart) })
       });
       if (!res.ok) throw new Error('Failed to update');
-    } catch (e) {
+    } catch {
       if (info?.revert) info.revert();
     }
   };
@@ -118,7 +116,7 @@ export default function ProgramCalendar({ program, programId }: { program: any; 
         body: JSON.stringify({ uid, newDurationMinutes })
       });
       if (!res.ok) throw new Error('Failed to update');
-    } catch (e) {
+    } catch {
       if (info?.revert) info.revert();
     }
   };
@@ -147,7 +145,7 @@ export default function ProgramCalendar({ program, programId }: { program: any; 
         </div>
       ) : sessions.length === 0 ? (
         <div className="p-4 rounded bg-yellow-50 text-yellow-800 border border-yellow-200">
-          No sessions have been scheduled yet. Use "Generate Schedule" from the program page.
+          No sessions have been scheduled yet. Use &quot;Generate Schedule&quot; from the program page.
         </div>
       ) : (
         // Fallback list view when FullCalendar not installed/loaded yet

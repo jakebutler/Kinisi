@@ -38,8 +38,8 @@ export async function POST(req: NextRequest) {
     let assessment: string;
     try {
       assessment = await generateAssessmentFromSurvey(surveyResponses);
-    } catch (e: any) {
-      console.error('[assessment] Generation failed:', e?.message || e);
+    } catch (e: unknown) {
+      console.error('[assessment] Generation failed:', e);
       return NextResponse.json({ error: 'Failed to generate assessment' }, { status: 500 });
     }
 

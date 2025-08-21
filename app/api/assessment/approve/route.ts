@@ -31,18 +31,20 @@ export async function POST() {
       .from('assessments')
       .update({ approved: true })
       .eq('id', latest.id)
-      .select();
+      .eq('user_id', user.id)
+      .select('id, approved')
+      .single();
 
     if (error) {
       console.error('Supabase error approving assessment:', error);
-      return NextResponse.json({ error: `Supabase error: ${error.message || error}` }, { status: 500 });
+      return NextResponse.json({ error: 'Failed to approve assessment' }, { status: 500 });
     }
 
-    if (!data || data.length === 0) {
+    if (!data) {
       return NextResponse.json({ error: 'No assessment updated' }, { status: 404 });
     }
 
-    return NextResponse.json({ success: true, data });
+    return NextResponse.json({ success: true, id: data.id, approved: data.approved });
   } catch (error) {
     console.error('Error in assessment approval:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });

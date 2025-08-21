@@ -66,8 +66,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
         return NextResponse.json({ error: "No available exercises found for the given filter" }, { status: 404 });
       }
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      return NextResponse.json({ error: "Failed to fetch exercises: " + message }, { status: 500 });
+      console.error('Failed to fetch exercises:', e);
+      return NextResponse.json({ error: "Failed to fetch exercises" }, { status: 500 });
     }
 
     // Build revision prompt
@@ -75,8 +75,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     try {
       prompt = buildProgramRevisionPrompt(program.program_json, feedback, exercises, assessment);
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      return NextResponse.json({ error: "Failed to build revision prompt: " + message }, { status: 422 });
+      console.error('Failed to build revision prompt:', e);
+      return NextResponse.json({ error: "Failed to build revision prompt" }, { status: 422 });
     }
 
     // Call LLM
@@ -84,8 +84,8 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     try {
       revised = await callLLMWithPrompt(prompt);
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      return NextResponse.json({ error: "LLM call failed: " + message }, { status: 502 });
+      console.error('LLM call failed:', e);
+      return NextResponse.json({ error: "LLM call failed" }, { status: 502 });
     }
 
     // Validate output
@@ -100,14 +100,14 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
     try {
       updated = await updateProgramJson(id, revised, "draft", supabase);
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      return NextResponse.json({ error: "Failed to save revised program: " + message }, { status: 500 });
+      console.error('Failed to save revised program:', e);
+      return NextResponse.json({ error: "Failed to save revised program" }, { status: 500 });
     }
 
     return NextResponse.json(updated, { status: 200 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('Unexpected error in POST /api/program/[id]/revise:', err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

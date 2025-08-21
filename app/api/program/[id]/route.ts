@@ -45,13 +45,12 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
       ) {
         return NextResponse.json({ error: "Program not found" }, { status: 404 });
       }
-      return NextResponse.json({ error: "Failed to fetch program: " + message }, { status: 500 });
+      return NextResponse.json({ error: "Failed to fetch program" }, { status: 500 });
     }
     return NextResponse.json(program, { status: 200 });
   } catch (err: unknown) {
     console.error('[500] Unexpected error in GET /api/program/[id]:', err);
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: "Internal server error: " + message }, { status: 500 });
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 
