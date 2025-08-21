@@ -2,6 +2,7 @@
 "use client";
 import React, { useEffect, useState } from "react";
 import { getExerciseNamesByIds } from "@/utils/programDataHelpers";
+import { supabase } from "@/utils/supabaseClient";
 
 interface ProgramSectionProps {
   assessmentApproved: boolean;
@@ -49,7 +50,7 @@ const ProgramSection: React.FC<ProgramSectionProps> = ({
           setExerciseNames({});
           return;
         }
-        const map = await getExerciseNamesByIds(unique);
+        const map = await getExerciseNamesByIds(unique, supabase);
         setExerciseNames(map);
       } catch {
         // best-effort; fall back to IDs

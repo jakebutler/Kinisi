@@ -25,8 +25,10 @@ Key features include:
     *   *Why*: Supabase uses PostgreSQL as its underlying database, offering a powerful, open-source relational database solution. It's directly integrated with Supabase's other backend services, making data access straightforward.
 -   **AI/LLM**: OpenAI GPT-3.5 Turbo (configurable to GPT-4) via Langchain.
     *   *Why*: OpenAI's GPT models are advanced language models capable of generating human-like text, making them suitable for creating personalized assessments from survey data. Langchain is a framework that simplifies the development of applications powered by language models, providing tools and abstractions for managing prompts, chains, and integrations.
--   **Deployment**: Netlify.
-    *   *Why*: Netlify offers a simple and powerful platform for deploying modern web applications, with features like continuous integration/continuous deployment (CI/CD), serverless functions, and easy configuration for Next.js projects.
+-   **Deployment/Preview**: Vercel.
+    *   *Why*: Vercel integrates tightly with Next.js and GitHub to provide fast preview deployments on pull requests and optimized production builds.
+-   **CI**: GitHub Actions.
+    *   *Why*: Reproducible CI pipeline for typecheck, lint, security audit, tests, and build. The workflow injects Supabase environment via repository secrets for reliable Next.js builds.
 
 ## Directory and File Structure
 
@@ -60,12 +62,28 @@ The project follows a structure typical for Next.js applications, with additions
     -   `node_modules/`: Contains all project dependencies.
     -   `.gitignore`: Specifies intentionally untracked files that Git should ignore.
     -   `next.config.ts`: Configuration file for Next.js.
-    -   `jest.config.mjs`: Configuration file for Jest.
+    -   `jest.config.cjs`: Configuration file for Jest.
     -   `playwright.config.ts`: Configuration file for Playwright.
     -   `package.json`: Lists project dependencies, scripts (e.g., `dev`, `build`, `test`), and other metadata.
     -   `tsconfig.json`: Configuration file for the TypeScript compiler.
     -   `README.md`: General information about the project, setup, and contribution guidelines.
     -   `PROJECT_DOCUMENTATION.md`: This file - detailed documentation about the project's architecture and workings.
+
+## Runtime & API Route Directives
+
+-   **Dynamic API routes**: All Next.js API route files that use the Supabase server client declare `export const dynamic = 'force-dynamic'`. This prevents static prerendering and ensures runtime server execution.
+    -   Examples include: `app/api/program/[id]/**`, `app/api/assessment/approve/route.ts`, `app/api/assessment/feedback/route.ts`, `app/api/exercises/[id]/route.ts`.
+-   **Node runtime where needed**: Routes that depend on Node-only packages declare `export const runtime = 'nodejs'` (e.g., `app/api/register/route.ts`).
+-   **Supabase usage pattern**:
+    -   Use `createSupabaseServerClient()` within server API routes.
+    -   Helpers in `utils/programDataHelpers.ts` require an explicit Supabase client parameter to avoid accidental client misuse.
+
+## Continuous Integration
+
+-   Workflow: `/.github/workflows/ci.yml`
+-   Steps: checkout, pnpm setup, Node 20, install (frozen lockfile), lint (non-blocking), typecheck, `pnpm audit --audit-level=high`, Jest tests, and build.
+-   Build env: `NEXT_PUBLIC_SUPABASE_URL` and `NEXT_PUBLIC_SUPABASE_ANON_KEY` are sourced from GitHub repository secrets during the Build step.
+-   Coverage: Codecov upload uses `CODECOV_TOKEN` if present in secrets.
 
 ## Authentication Flow
 

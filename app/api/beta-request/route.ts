@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { createBetaRequest, findBetaRequestByEmail } from '@/utils/betaRequests';
 import { supabaseAdmin } from '@/utils/supabaseAdmin';
 
+export const dynamic = 'force-dynamic';
+
 function isValidEmail(email: string) {
   // Simple RFC5322-like check sufficient for server-side validation
   return /[^\s@]+@[^\s@]+\.[^\s@]+/.test(email);
