@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
 import { createSupabaseServerClient } from "@/utils/supabaseServer";
 
 export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {

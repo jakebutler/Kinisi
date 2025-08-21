@@ -1,5 +1,6 @@
 // app/api/exercises/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
+export const dynamic = 'force-dynamic';
 import { createSupabaseServerClient } from "@/utils/supabaseServer";
 
 export async function GET(

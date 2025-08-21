@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+export const dynamic = 'force-dynamic';
 import { reviseAssessmentWithFeedback } from '../../../../utils/assessmentChain';
 import { createSupabaseServerClient } from '../../../../utils/supabaseServer';
 
