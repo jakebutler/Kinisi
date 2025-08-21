@@ -37,10 +37,10 @@ describe('API: POST /api/program/[id]/schedule', () => {
     jest.clearAllMocks();
     mockSupabase.auth.getUser.mockReset();
     mockSupabase.auth.getUser.mockResolvedValue({ data: { user: { id: 'user-1' } } });
-    (createSupabaseServerClient as jest.Mock).mockResolvedValue(mockSupabase);
-    (getProgramById as jest.Mock).mockResolvedValue(mockProgram);
+    (createSupabaseServerClient as unknown as jest.Mock).mockResolvedValue(mockSupabase);
+    (getProgramById as unknown as jest.Mock).mockResolvedValue(mockProgram);
     (scheduleProgram as jest.Mock).mockReturnValue({ updated: savedResponse.program_json, appliedPreferences: { preferred_days: ['Mon','Wed'] } });
-    (updateProgramFields as jest.Mock).mockResolvedValue(savedResponse);
+    (updateProgramFields as unknown as jest.Mock).mockResolvedValue(savedResponse);
   });
 
   it('returns 200 on success and saves schedule', async () => {
@@ -79,21 +79,21 @@ describe('API: POST /api/program/[id]/schedule', () => {
   });
 
   it('404 when program not found', async () => {
-    (getProgramById as jest.Mock).mockResolvedValueOnce(null);
+    (getProgramById as unknown as jest.Mock).mockResolvedValueOnce(null);
     const req = { json: async () => ({}) } as any;
     const res: any = await schedulePOST(req, { params: { id: validId } } as any);
     expect(res.status).toBe(404);
   });
 
   it('403 when program belongs to another user', async () => {
-    (getProgramById as jest.Mock).mockResolvedValueOnce({ ...mockProgram, user_id: 'someone-else' });
+    (getProgramById as unknown as jest.Mock).mockResolvedValueOnce({ ...mockProgram, user_id: 'someone-else' });
     const req = { json: async () => ({}) } as any;
     const res: any = await schedulePOST(req, { params: { id: validId } } as any);
     expect(res.status).toBe(403);
   });
 
   it('500 when saving fails', async () => {
-    (updateProgramFields as jest.Mock).mockRejectedValueOnce(new Error('db error'));
+    (updateProgramFields as unknown as jest.Mock).mockRejectedValueOnce(new Error('db error'));
     const req = { json: async () => ({}) } as any;
     const res: any = await schedulePOST(req, { params: { id: validId } } as any);
     expect(res.status).toBe(500);

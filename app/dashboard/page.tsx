@@ -11,6 +11,7 @@ import { useAuth } from "@/components/context/AuthContext";
 import ProgramSection from "@/components/dashboard/ProgramSection";
 import { ExerciseProgramPayload } from "@/utils/types/programTypes";
 import { getProgramByUserId, approveProgram } from "@/utils/programDataHelpers";
+import { supabase } from "@/utils/supabaseClient";
 
 // Helper function to format survey answers for display
 function formatAnswer(key: string, value: unknown, schema: Record<string, unknown>): React.ReactNode {
@@ -101,7 +102,7 @@ export default function DashboardPage() {
       setProgramError(null);
       try {
         // Fetch the user's latest program
-        const programData = await getProgramByUserId(user.id);
+        const programData = await getProgramByUserId(user.id, supabase);
         if (programData && programData.program_json) {
           setProgram(programData.program_json);
           setProgramApproved(programData.status === "approved");
@@ -422,7 +423,7 @@ export default function DashboardPage() {
               if (!user || !program || !programId) return;
               try {
                 setIsGeneratingProgram(true);
-                await approveProgram(programId);
+                await approveProgram(programId, supabase);
                 setProgramApproved(true);
               } catch {
                 setProgramError("Failed to approve program. Please try again.");

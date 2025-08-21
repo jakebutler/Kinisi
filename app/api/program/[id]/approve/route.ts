@@ -3,6 +3,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { approveProgram, getProgramById } from "@/utils/programDataHelpers";
 import { createSupabaseServerClient } from "@/utils/supabaseServer";
 
+// Avoid static prerender during build; this route depends on runtime auth/env.
+export const dynamic = 'force-dynamic';
+
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   const { id } = (await params) ?? ({} as { id?: string });
   try {

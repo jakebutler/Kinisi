@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { retrieveRagChunksByText, retrieveRagChunksForSurvey } from '@/utils/rag';
 
+export const dynamic = 'force-dynamic';
+
 // POST /api/rag/retrieve
 // Body: { query?: string, surveyResponses?: Record<string, any>, k?: number }
 export async function POST(req: NextRequest) {

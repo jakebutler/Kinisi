@@ -1,5 +1,4 @@
 // utils/programDataHelpers.ts
-import { supabase } from "./supabaseClient";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { Exercise } from "./types/programTypes";
 
@@ -10,7 +9,8 @@ type NewProgram = {
   status?: string;
 };
 export async function saveExerciseProgram(program: NewProgram, client?: SupabaseClient) {
-  const c = client ?? supabase;
+  const c = client;
+  if (!c) throw new Error("Supabase client required");
   const { data, error } = await c.from("exercise_programs").insert([program]).select();
   if (error) throw new Error(error.message);
   return data?.[0];
@@ -18,7 +18,8 @@ export async function saveExerciseProgram(program: NewProgram, client?: Supabase
 
 // Fetch a program by user ID (gets the latest program for a user)
 export async function getProgramByUserId(userId: string, client?: SupabaseClient) {
-  const c = client ?? supabase;
+  const c = client;
+  if (!c) throw new Error("Supabase client required");
   const { data: program, error: programError } = await c
     .from("exercise_programs")
     .select("*")
@@ -36,7 +37,8 @@ export async function getProgramByUserId(userId: string, client?: SupabaseClient
 
 // Fetch a program by ID
 export async function getProgramById(id: string, client?: SupabaseClient) {
-  const c = client ?? supabase;
+  const c = client;
+  if (!c) throw new Error("Supabase client required");
   // 1. Fetch the program
   const { data: program, error: programError } = await c
     .from("exercise_programs")
@@ -94,7 +96,8 @@ export async function saveProgramFeedback({
   feedback: string;
   revision?: number;
 }, client?: SupabaseClient) {
-  const c = client ?? supabase;
+  const c = client;
+  if (!c) throw new Error("Supabase client required");
   const payload: Record<string, any> = {
     program_id,
     session_id,
@@ -113,7 +116,8 @@ export async function saveProgramFeedback({
 
 // Approve a program (set status to 'approved')
 export async function approveProgram(id: string, client?: SupabaseClient) {
-  const c = client ?? supabase;
+  const c = client;
+  if (!c) throw new Error("Supabase client required");
   const { data, error } = await c.from("exercise_programs").update({ status: "approved" }).eq("id", id).select();
   if (error) throw new Error(error.message);
   return data?.[0];
@@ -121,7 +125,8 @@ export async function approveProgram(id: string, client?: SupabaseClient) {
 
 // Update a program's JSON (and optionally status)
 export async function updateProgramJson(id: string, program_json: any, status?: string, client?: SupabaseClient) {
-  const c = client ?? supabase;
+  const c = client;
+  if (!c) throw new Error("Supabase client required");
   const update: Record<string, any> = { program_json };
   if (status) update.status = status;
   const { data, error } = await c
@@ -144,7 +149,8 @@ export async function updateProgramFields(
   },
   client?: SupabaseClient
 ) {
-  const c = client ?? supabase;
+  const c = client;
+  if (!c) throw new Error("Supabase client required");
   const update: Record<string, any> = {};
   if (typeof fields.program_json !== 'undefined') update.program_json = fields.program_json;
   if (typeof fields.scheduling_preferences !== 'undefined') update.scheduling_preferences = fields.scheduling_preferences;
@@ -169,7 +175,8 @@ export async function getAvailableExercises(filter?: {
   primary_muscles?: string[];
   equipment?: string[];
 }, client?: SupabaseClient): Promise<Exercise[]> {
-  const c = client ?? supabase;
+  const c = client;
+  if (!c) throw new Error("Supabase client required");
   let query = c.from("exercises").select("exercise_id, name, target_muscles, equipments");
   if (filter?.primary_muscles && filter.primary_muscles.length > 0) {
     // For backward compatibility, map primary_muscles to target_muscles
@@ -195,7 +202,8 @@ export async function getAvailableExercises(filter?: {
  * Returns a map of exercise_id -> name.
  */
 export async function getExerciseNamesByIds(ids: string[], client?: SupabaseClient): Promise<Record<string, string>> {
-  const c = client ?? supabase;
+  const c = client;
+  if (!c) throw new Error("Supabase client required");
   const unique = Array.from(new Set((ids || []).filter(Boolean)));
   if (unique.length === 0) return {};
   const { data, error } = await c
