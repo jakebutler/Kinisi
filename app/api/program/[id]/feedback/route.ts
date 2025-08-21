@@ -1,4 +1,5 @@
 // app/api/program/[id]/feedback/route.ts
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getProgramById, saveProgramFeedback } from "@/utils/programDataHelpers";
 import { createSupabaseServerClient } from "@/utils/supabaseServer";

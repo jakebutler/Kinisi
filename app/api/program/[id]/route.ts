@@ -1,4 +1,5 @@
 // app/api/program/[id]/route.ts
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getProgramById } from "@/utils/programDataHelpers";
 import { createSupabaseServerClient } from "@/utils/supabaseServer";

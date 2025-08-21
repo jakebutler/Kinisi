@@ -1,4 +1,5 @@
 // app/api/program/[id]/revise/route.ts
+export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getProgramById, getAvailableExercises, updateProgramJson } from "@/utils/programDataHelpers";
 import { buildProgramRevisionPrompt } from "@/utils/programPromptTemplate";
