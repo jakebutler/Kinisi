@@ -1,6 +1,7 @@
 // app/api/program/[id]/route.ts
 import { NextRequest, NextResponse } from "next/server";
 import { getProgramById } from "@/utils/programDataHelpers";
+import { createSupabaseServerClient } from "@/utils/supabaseServer";
 
 export async function GET(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
@@ -17,7 +18,8 @@ export async function GET(req: NextRequest, { params }: { params: Promise<{ id: 
     }
     let program;
     try {
-      program = await getProgramById(id);
+      const supabase = await createSupabaseServerClient();
+      program = await getProgramById(id, supabase);
       // Some Supabase clients throw, some return null, some return error with code/property
       if (!program || (program === null) || (typeof program === 'object' && ('error' in program) && program.error?.code === 'PGRST116')) {
         console.error('[404] Program not found for id:', id);

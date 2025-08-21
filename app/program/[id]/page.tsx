@@ -2,6 +2,8 @@
 import Link from "next/link";
 import { getProgramById, getExerciseNamesByIds } from "@/utils/programDataHelpers";
 import ProgramActions from "@/components/program/ProgramActions";
+import { createSupabaseServerClient } from "@/utils/supabaseServer";
+import { redirect } from "next/navigation";
 
 // Program details page: renders from program_json since relational sessions may not be populated yet
 export default async function ProgramDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -16,9 +18,18 @@ export default async function ProgramDetailsPage({ params }: { params: Promise<{
     );
   }
 
+  // Auth check: require logged-in user; otherwise redirect to login
+  const supabase = await createSupabaseServerClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    redirect("/login");
+  }
+
   let program: any = null;
   try {
-    program = await getProgramById(id);
+    program = await getProgramById(id, supabase);
   } catch {
     // swallow and show not found-ish UI
   }
@@ -43,7 +54,7 @@ export default async function ProgramDetailsPage({ params }: { params: Promise<{
       ? w.sessions.flatMap((s: any) => Array.isArray(s.exercises) ? s.exercises.map((e: any) => e.exercise_id).filter(Boolean) : [])
       : []
   );
-  const nameMap = await getExerciseNamesByIds(Array.from(new Set(allIds)));
+  const nameMap = await getExerciseNamesByIds(Array.from(new Set(allIds)), supabase);
 
   return (
     <div className="max-w-4xl mx-auto p-6">

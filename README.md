@@ -45,8 +45,8 @@ Kinisi is a mobile-responsive web application that builds personalized, adaptive
    ```
 
 3. Set up environment variables:
-   Create a `.env.local` file in the root directory with:
-   ```
+   Create a `.env.local` (or `.env`) file in the repo root with at least:
+   ```ini
    NEXT_PUBLIC_SUPABASE_URL=your_supabase_url
    NEXT_PUBLIC_SUPABASE_ANON_KEY=your_supabase_anon_key
    ```
@@ -59,6 +59,34 @@ Kinisi is a mobile-responsive web application that builds personalized, adaptive
    ```
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser.
+
+## Environment Variables (full list)
+
+These are required for authentication, secure registration, and email confirmation.
+
+```ini
+# Supabase (client)
+NEXT_PUBLIC_SUPABASE_URL=
+NEXT_PUBLIC_SUPABASE_ANON_KEY=
+
+# Supabase (server)
+SUPABASE_SERVICE_ROLE_KEY=
+
+# Secure registration
+ACCESS_CODE=
+
+# Email (Resend)
+RESEND_API_KEY=
+EMAIL_FROM= "Your App <no-reply@yourdomain.com>"
+
+# Site URL (used for email confirmation redirect)
+NEXT_PUBLIC_SITE_URL= "http://localhost:3000"
+```
+
+Notes:
+- `EMAIL_FROM` should be a verified sender to avoid delivery issues.
+- Confirmation emails redirect to `${NEXT_PUBLIC_SITE_URL}/survey` after verification.
+- For local dev, `.env.local` is recommended. In production, configure these in your hosting provider.
 
 ## Project Structure
 

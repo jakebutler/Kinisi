@@ -34,8 +34,8 @@ export default function NavBar() {
               <Link href="/#beta" className="text-gray-700 dark:text-gray-200 hover:underline">Beta access</Link>
               <Link href="/login" className="text-gray-700 dark:text-gray-200 hover:underline">Sign in</Link>
               <Link
-                href="/access"
-                className="h-9 px-4 rounded-md text-white"
+                href="/register"
+                className="h-9 px-4 inline-flex items-center justify-center rounded-md text-white"
                 style={{ backgroundColor: "var(--brand-puce)" }}
               >
                 Sign up
@@ -113,7 +113,7 @@ export default function NavBar() {
                 <Link href="/#beta" onClick={close} className="px-2 py-2 rounded hover:bg-black/5 dark:hover:bg-white/10">Beta access</Link>
                 <Link href="/login" onClick={close} className="px-2 py-2 rounded hover:bg-black/5 dark:hover:bg-white/10">Sign in</Link>
                 <Link
-                  href="/access"
+                  href="/register"
                   onClick={close}
                   className="mt-2 h-10 inline-flex items-center justify-center rounded-md text-white"
                   style={{ backgroundColor: "var(--brand-puce)" }}

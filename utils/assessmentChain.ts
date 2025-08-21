@@ -25,18 +25,39 @@ export async function generateAssessmentFromSurvey(surveyResponses: Record<strin
     console.warn("RAG retrieval failed, continuing without context", e);
   }
 
-  // Fetch prompt template from PromptLayer registry
+  // Fetch prompt template from PromptLayer registry with fallback
   const ASSESSMENT_PROMPT_ID = 80123; // ID for 'Personalized Assessment'
-  const promptTemplate = await fetchPromptFromRegistry(ASSESSMENT_PROMPT_ID);
+  let promptTemplate: string;
+  try {
+    promptTemplate = await fetchPromptFromRegistry(ASSESSMENT_PROMPT_ID);
+  } catch (e) {
+    console.warn("PromptLayer unavailable or misconfigured, using fallback prompt.", e);
+    promptTemplate = `You are an experienced fitness coach creating a personalized initial assessment.
+Input is a set of survey answers about the user's goals, history, and constraints.
+Write a concise, empathetic assessment that:
+1) Summarizes current status and goals
+2) Highlights key constraints or risks
+3) Recommends focus areas for the next 4–6 weeks
+4) Suggests 2–3 actionable next steps
+
+Format as short paragraphs with clear headings. Keep it under 300 words.
+
+SURVEY ANSWERS:\n{{survey}}`;
+  }
   const assessmentPrompt = new PromptTemplate({
     inputVariables: ["survey"],
     template: promptTemplate
   });
 
-  // Use OpenAI's gpt-3.5-turbo by default; update here to change model/provider
+  // Use OpenAI's gpt-3.5-turbo by default; ensure API key present
+  const apiKey = process.env.OPENAI_API_KEY || process.env.NEXT_PUBLIC_OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not configured on the server");
+  }
   const llm = new ChatOpenAI({
     modelName: "gpt-3.5-turbo", // Change to "gpt-4" or other as needed
     temperature: 0.7,
+    apiKey,
   });
 
   // LangChain sequence: prompt -> LLM -> output parser
@@ -67,18 +88,32 @@ export async function reviseAssessmentWithFeedback({
     .map(([key, value]) => `${key}: ${value}`)
     .join("\n");
 
-  // Fetch revision prompt template from PromptLayer registry
+  // Fetch revision prompt template from PromptLayer registry (with fallback)
   const REVISION_PROMPT_ID = 80132; // ID for 'Update Personalized Assessment'
-  const revisionPromptTemplate = await fetchPromptFromRegistry(REVISION_PROMPT_ID);
+  let revisionPromptTemplate: string;
+  try {
+    revisionPromptTemplate = await fetchPromptFromRegistry(REVISION_PROMPT_ID);
+  } catch (e) {
+    console.warn("PromptLayer unavailable or misconfigured, using fallback revision prompt.", e);
+    revisionPromptTemplate = `You are revising a fitness assessment based on user feedback. Keep the helpful parts, address the feedback, and tighten wording.
+Return an updated assessment with clear headings and actionable next steps.
+
+CURRENT ASSESSMENT:\n{{assessment}}\n\nFEEDBACK:\n{{feedback}}\n\nSURVEY ANSWERS:\n{{survey}}`;
+  }
   const revisionPrompt = new PromptTemplate({
     inputVariables: ["assessment", "feedback", "survey"],
     template: revisionPromptTemplate
   });
 
-  // Use OpenAI's gpt-3.5-turbo by default
+  // Use OpenAI's gpt-3.5-turbo by default (ensure API key)
+  const apiKey = process.env.OPENAI_API_KEY || process.env.NEXT_PUBLIC_OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error("OPENAI_API_KEY is not configured on the server");
+  }
   const llm = new ChatOpenAI({
     modelName: "gpt-3.5-turbo",
     temperature: 0.7,
+    apiKey,
   });
 
   // LangChain sequence: prompt -> LLM -> output parser
