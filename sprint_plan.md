@@ -12,7 +12,7 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 - **Authentication**: Supabase Auth (Email/Password)
 - **Database**: Supabase PostgreSQL
 - **LLM**: OpenAI GPT-4
-- **Deployment**: Netlify
+- **Deployment**: Vercel
 - **Version Control**: GitHub
 
 ## ✨ **Sprint 1: Authentication**

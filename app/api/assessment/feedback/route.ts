@@ -6,9 +6,19 @@ import { createSupabaseServerClient } from '../../../../utils/supabaseServer';
 // POST /api/assessment/feedback
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json();
+    let body: unknown;
+    try {
+      body = await req.json();
+    } catch {
+      return NextResponse.json({ error: 'Invalid JSON in request body' }, { status: 400 });
+    }
 
-    const { currentAssessment, feedback, surveyResponses, revisionOfAssessmentId } = body;
+    const { currentAssessment, feedback, surveyResponses, revisionOfAssessmentId } = body as {
+      currentAssessment?: unknown;
+      feedback?: unknown;
+      surveyResponses?: unknown;
+      revisionOfAssessmentId?: unknown;
+    };
 
     // 1. Validate required fields
     const missing: string[] = [];
@@ -17,6 +27,14 @@ export async function POST(req: NextRequest) {
     if (typeof surveyResponses !== 'object' || surveyResponses === null) missing.push('surveyResponses');
     if (missing.length) {
       return NextResponse.json({ error: `Missing or invalid: ${missing.join(', ')}` }, { status: 400 });
+    }
+
+    // Validate optional revisionOfAssessmentId if present
+    if (revisionOfAssessmentId !== undefined) {
+      const uuidRe = /^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[1-5][0-9a-fA-F]{3}-[89abAB][0-9a-fA-F]{3}-[0-9a-fA-F]{12}$/;
+      if (typeof revisionOfAssessmentId !== 'string' || !uuidRe.test(revisionOfAssessmentId)) {
+        return NextResponse.json({ error: 'Invalid revisionOfAssessmentId' }, { status: 400 });
+      }
     }
 
     const supabase = await createSupabaseServerClient();
@@ -50,16 +68,20 @@ export async function POST(req: NextRequest) {
     const surveyResponseId = surveyRows.id;
 
     // 3. Call LangChain-powered revision agent (Moved here)
+    // Cast validated inputs to concrete types for type safety
+    const currentAssessmentStr = currentAssessment as string;
+    const feedbackStr = feedback as string;
+    const surveyResponsesObj = surveyResponses as Record<string, unknown>;
     let revisedAssessment: string;
     try {
       revisedAssessment = await reviseAssessmentWithFeedback({
-        currentAssessment,
-        feedback,
-        surveyResponses
+        currentAssessment: currentAssessmentStr,
+        feedback: feedbackStr,
+        surveyResponses: surveyResponsesObj,
       });
     } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      return NextResponse.json({ error: 'Failed to revise assessment: ' + message }, { status: 500 });
+      console.error('reviseAssessmentWithFeedback failed:', e);
+      return NextResponse.json({ error: 'Failed to revise assessment' }, { status: 500 });
     }
 
     let assessmentResult;
@@ -70,7 +92,7 @@ export async function POST(req: NextRequest) {
         user_id: user.id,
         survey_response_id: surveyResponseId, // Use the correctly extracted ID
         assessment: revisedAssessment,
-        feedback: feedback, // Store the feedback that led to this assessment
+        feedback: feedbackStr, // Store the feedback that led to this assessment
     };
 
     if (revisionOfAssessmentId) {
@@ -84,13 +106,18 @@ export async function POST(req: NextRequest) {
                 // It should point to the original or previous revision if applicable
                 // For this logic, we assume revisionOfAssessmentId *is* the record being updated
             })
-            .eq("id", revisionOfAssessmentId)
+            .eq("id", revisionOfAssessmentId as string)
             .eq("user_id", user.id)
             .select("id, assessment")
-            .single(); // Expecting the updated row back
+            .maybeSingle(); // 0 or 1 row
 
-        assessmentResult = data;
-        assessmentError = error;
+        if (error) {
+          assessmentError = error;
+        } else if (!data) {
+          return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
+        } else {
+          assessmentResult = data;
+        }
 
     } else {
         // Insert new assessment
@@ -120,8 +147,8 @@ export async function POST(req: NextRequest) {
      // Supabase update/insert single() returns the object directly in data if successful
      // If data is null or undefined here, it might indicate an issue even without a specific error object
     if (!assessmentResult) {
-         console.error('Database operation returned no data:', assessmentError); // Log error object if it exists
-         return NextResponse.json({ error: "Failed to store revised assessment (no data returned)" }, { status: 500 });
+      console.error('Database operation returned no data:', assessmentError);
+      return NextResponse.json({ error: "Failed to store revised assessment" }, { status: 500 });
     }
 
 

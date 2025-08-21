@@ -34,8 +34,8 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
       .update({ start_date: startDate })
       .eq("id", id)
       .eq("user_id", user.id)
-      .select()
-      .single();
+      .select("id, start_date")
+      .maybeSingle();
     if (error) {
       console.error('[500] start-date update error:', error);
       return NextResponse.json({ error: "Failed to update start date" }, { status: 500 });
@@ -43,10 +43,10 @@ export async function PATCH(req: NextRequest, { params }: { params: Promise<{ id
     if (!data) {
       return NextResponse.json({ error: "Program not found" }, { status: 404 });
     }
-    return NextResponse.json(data, { status: 200 });
+    return NextResponse.json({ id: data.id, start_date: data.start_date }, { status: 200 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('[500] start-date unexpected error:', err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
 

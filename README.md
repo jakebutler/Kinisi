@@ -18,7 +18,7 @@ Kinisi is a mobile-responsive web application that builds personalized, adaptive
 - **Authentication**: Supabase Auth
 - **Database**: Supabase PostgreSQL
 - **AI/LLM**: OpenAI GPT-4
-- **Deployment**: Netlify
+- **Deployment**: Vercel
 
 ## Getting Started
 

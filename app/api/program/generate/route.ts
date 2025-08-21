@@ -74,9 +74,9 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json(saved, { status: 201 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
+    console.error('[500] Unexpected error in POST /api/program/generate:', err);
     return NextResponse.json(
-      { error: "Internal server error: " + message },
+      { error: "Internal server error" },
       { status: 500 }
     );
   }

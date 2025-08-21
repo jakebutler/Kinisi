@@ -27,7 +27,7 @@ export async function GET(
 
     return NextResponse.json(exercise, { status: 200 });
   } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    return NextResponse.json({ error: message }, { status: 400 });
+    console.error('Unexpected error in GET /api/exercises/[id]:', err);
+    return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }

@@ -24,13 +24,19 @@ export default function RegisterPage() {
         body: JSON.stringify({ email, password, accessCode }),
       });
 
-      let data: any = null;
+      let data: unknown = null;
       try {
         data = await response.json();
       } catch {}
 
       if (!response.ok) {
-        setError(data?.error || "An error occurred during registration.");
+        const msg = (
+          data &&
+          typeof data === 'object' &&
+          'error' in data &&
+          typeof (data as { error?: unknown }).error === 'string'
+        ) ? (data as { error: string }).error : "An error occurred during registration.";
+        setError(msg);
         return;
       }
 
