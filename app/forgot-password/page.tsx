@@ -44,7 +44,7 @@ export default function ForgotPasswordPage() {
         {message && <div className="mb-2 text-green-700">{message}</div>}
         <button
           type="submit"
-          className="w-full btn-gradient text-white py-2 rounded disabled:opacity-50"
+          className="w-full btn-primary disabled:opacity-50"
           disabled={loading}
         >
           {loading ? "Sending..." : "Send Reset Email"}

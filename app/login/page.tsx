@@ -71,7 +71,7 @@ export default function LoginPage() {
         {error && <div className="mb-2 text-red-600">{error}</div>}
         <button
           type="submit"
-          className="w-full btn-gradient text-white py-2 rounded disabled:opacity-50"
+          className="w-full btn-primary disabled:opacity-50"
           disabled={loading}
         >
           {loading ? "Signing in..." : "Sign In"}

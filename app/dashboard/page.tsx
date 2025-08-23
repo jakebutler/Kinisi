@@ -12,6 +12,8 @@ import ProgramSection from "@/components/dashboard/ProgramSection";
 import { ExerciseProgramPayload } from "@/utils/types/programTypes";
 import { getProgramByUserId, approveProgram } from "@/utils/programDataHelpers";
 import { supabase } from "@/utils/supabaseClient";
+import OnboardingProgress from "@/components/dashboard/OnboardingProgress";
+import { isProgramScheduled } from "@/utils/onboarding";
 
 // Helper function to format survey answers for display
 function formatAnswer(key: string, value: unknown, schema: Record<string, unknown>): React.ReactNode {
@@ -205,6 +207,58 @@ export default function DashboardPage() {
     fetchRag();
   }, [surveyResponse]);
 
+  // Reusable handlers for Program actions
+  const handleApproveProgram = async () => {
+    if (!user || !program || !programId) return;
+    try {
+      setIsGeneratingProgram(true);
+      await approveProgram(programId, supabase);
+      setProgramApproved(true);
+    } catch {
+      setProgramError("Failed to approve program. Please try again.");
+    } finally {
+      setIsGeneratingProgram(false);
+    }
+  };
+
+  const handleGenerateProgram = async () => {
+    if (!user || !assessmentApproved) return;
+    if (!assessment) {
+      setProgramError("Assessment content not found. Please refresh and try again.");
+      return;
+    }
+    try {
+      setIsGeneratingProgram(true);
+      setProgramError(null);
+      const res = await fetch('/api/program/create', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          assessment,
+          exerciseFilter: {},
+          userId: user.id,
+        }),
+      });
+      if (!res.ok) {
+        let errMsg = 'Failed to generate program';
+        try {
+          const j = await res.json();
+          if (j?.error) errMsg = j.error;
+        } catch {}
+        throw new Error(errMsg);
+      }
+      const saved = await res.json();
+      setProgram(saved?.program_json || null);
+      setProgramApproved(saved?.status === 'approved');
+      setStartDate(saved?.start_date || null);
+      setProgramId(saved?.id || null);
+    } catch {
+      setProgramError("Failed to generate program. Please try again.");
+    } finally {
+      setIsGeneratingProgram(false);
+    }
+  };
+
   const handleApproveAssessment = async () => {
     if (!user || !assessment) return;
 
@@ -250,7 +304,7 @@ export default function DashboardPage() {
             <p className="text-gray-700 mb-4">{error}</p>
             <button 
               onClick={() => window.location.reload()}
-              className="px-4 py-2 btn-gradient text-white rounded"
+              className="btn-primary"
             >
               Retry
             </button>
@@ -265,6 +319,21 @@ export default function DashboardPage() {
       <div className="min-h-screen py-8">
         <div className="max-w-4xl mx-auto px-4">
           <h1 className="text-3xl font-bold mb-8 text-center">Your Dashboard</h1>
+          {/* Onboarding Progress Tracker */}
+          <OnboardingProgress
+            surveyCompleted={surveyCompleted}
+            assessmentExists={Boolean(assessment)}
+            assessmentApproved={assessmentApproved}
+            isGeneratingAssessment={isGeneratingAssessment}
+            programExists={Boolean(program)}
+            programApproved={programApproved}
+            isGeneratingProgram={isGeneratingProgram}
+            scheduled={isProgramScheduled(program)}
+            programId={programId}
+            onApproveAssessment={handleApproveAssessment}
+            onGenerateProgram={handleGenerateProgram}
+            onApproveProgram={handleApproveProgram}
+          />
           
           {/* Survey Results Section */}
           <div className="bg-white rounded-lg shadow-md p-6 mb-8">
@@ -300,7 +369,7 @@ export default function DashboardPage() {
                 </p>
                 <button
                   onClick={() => router.push('/survey')}
-                  className="px-6 py-2 btn-gradient text-white rounded-lg transition-colors"
+                  className="btn-primary"
                 >
                   Start Survey
                 </button>
@@ -366,7 +435,7 @@ export default function DashboardPage() {
                     </button>
                     <button
                       onClick={() => router.push('/survey/results')}
-                      className="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
+                      className="btn-secondary"
                     >
                       Request Changes
                     </button>
@@ -388,7 +457,7 @@ export default function DashboardPage() {
                 <p className="text-gray-600 mb-4">No assessment available</p>
                 <button
                   onClick={() => window.location.reload()}
-                  className="px-6 py-2 btn-gradient text-white rounded-lg transition-colors"
+                  className="btn-primary"
                 >
                   Generate Assessment
                 </button>
@@ -415,55 +484,8 @@ export default function DashboardPage() {
                 router.push(`/program/${programId}#feedback`);
               }
             }}
-            onApproveProgram={async () => {
-              if (!user || !program || !programId) return;
-              try {
-                setIsGeneratingProgram(true);
-                await approveProgram(programId, supabase);
-                setProgramApproved(true);
-              } catch {
-                setProgramError("Failed to approve program. Please try again.");
-              } finally {
-                setIsGeneratingProgram(false);
-              }
-            }}
-            onGenerateProgram={async () => {
-              if (!user || !assessmentApproved) return;
-              if (!assessment) {
-                setProgramError("Assessment content not found. Please refresh and try again.");
-                return;
-              }
-              try {
-                setIsGeneratingProgram(true);
-                setProgramError(null);
-                const res = await fetch('/api/program/create', {
-                  method: 'POST',
-                  headers: { 'Content-Type': 'application/json' },
-                  body: JSON.stringify({
-                    assessment,
-                    exerciseFilter: {},
-                    userId: user.id,
-                  }),
-                });
-                if (!res.ok) {
-                  let errMsg = 'Failed to generate program';
-                  try {
-                    const j = await res.json();
-                    if (j?.error) errMsg = j.error;
-                  } catch {}
-                  throw new Error(errMsg);
-                }
-                const saved = await res.json();
-                setProgram(saved?.program_json || null);
-                setProgramApproved(saved?.status === 'approved');
-                setStartDate(saved?.start_date || null);
-                setProgramId(saved?.id || null);
-              } catch {
-                setProgramError("Failed to generate program. Please try again.");
-              } finally {
-                setIsGeneratingProgram(false);
-              }
-            }}
+            onApproveProgram={handleApproveProgram}
+            onGenerateProgram={handleGenerateProgram}
             onStartDateChange={async (date) => {
               setStartDate(date);
               if (!user || !program || !programId) return;

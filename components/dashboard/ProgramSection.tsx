@@ -111,7 +111,7 @@ const ProgramSection: React.FC<ProgramSectionProps> = ({
       <div className="bg-white rounded-lg shadow-md p-6 mt-8">
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-2xl font-semibold">Your Fitness Program <span className="ml-2 px-2 py-1 text-xs bg-yellow-200 text-yellow-900 rounded">Draft</span></h2>
-          <button onClick={onSeeProgram} className="px-4 py-2 btn-gradient text-white rounded transition-colors">See my program</button>
+          <button onClick={onSeeProgram} className="btn-primary">See my program</button>
         </div>
         {startDate && (
           <div className="mb-4">
@@ -140,7 +140,7 @@ const ProgramSection: React.FC<ProgramSectionProps> = ({
           ))}
         </div>
         <div className="flex mt-4 space-x-2">
-          <button onClick={onGiveFeedback} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Give Feedback</button>
+          <button onClick={onGiveFeedback} className="btn-secondary">Give Feedback</button>
           <button onClick={onApproveProgram} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Approve Program</button>
         </div>
       </div>
@@ -153,7 +153,7 @@ const ProgramSection: React.FC<ProgramSectionProps> = ({
       <div className="bg-white rounded-lg shadow-md p-6 mt-8">
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-2xl font-semibold">Your Fitness Program <span className="ml-2 px-2 py-1 text-xs bg-green-200 text-green-900 rounded">Approved</span></h2>
-          <button onClick={onSeeProgram} className="px-4 py-2 btn-gradient text-white rounded transition-colors">View Program Details</button>
+          <button onClick={onSeeProgram} className="btn-primary">View Program Details</button>
         </div>
         <div className="mb-2 text-gray-700">{program.weeks?.length || 0} weeks, {totalSessions} sessions</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -176,8 +176,8 @@ const ProgramSection: React.FC<ProgramSectionProps> = ({
           ))}
         </div>
         <div className="flex mt-4 space-x-2">
-          <button onClick={onSeeProgram} className="px-4 py-2 btn-gradient text-white rounded">See Full Program</button>
-          <button onClick={onGiveFeedback} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Give Feedback</button>
+          <button onClick={onSeeProgram} className="btn-primary">See Full Program</button>
+          <button onClick={onGiveFeedback} className="btn-secondary">Give Feedback</button>
         </div>
       </div>
     );
@@ -190,7 +190,7 @@ const ProgramSection: React.FC<ProgramSectionProps> = ({
       <p className="text-gray-700 mb-4">No program has been created yet. Generate your personalized plan to get started.</p>
       <button
         onClick={onGenerateProgram}
-        className="px-6 py-2 btn-gradient text-white rounded-lg transition-colors"
+        className="btn-primary"
       >
         Generate Program
       </button>
