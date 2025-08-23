@@ -13,19 +13,19 @@ Kinisi is a mobile-responsive web application that builds personalized, adaptive
 
 ## Tech Stack
 
-- **Frontend**: Next.js 14 with TypeScript
+- **Frontend**: Next.js 15 with TypeScript
 - **Styling**: Tailwind CSS
 - **Authentication**: Supabase Auth
 - **Database**: Supabase PostgreSQL
-- **AI/LLM**: OpenAI GPT-4
+- **AI/LLM**: OpenAI GPT-3.5 Turbo (configurable) via LangChain
 - **Deployment**: Vercel
 
 ## Getting Started
 
 ### Prerequisites
 
-- Node.js 18+
-- npm or yarn
+- Node.js 20+
+- pnpm
 - Supabase account
 - OpenAI API key
 
@@ -34,14 +34,12 @@ Kinisi is a mobile-responsive web application that builds personalized, adaptive
 1. Clone the repository:
    ```bash
    git clone https://github.com/jakebutler/Kinisi.git
-   cd Kinisi/kinisi-app
+   cd Kinisi
    ```
 
 2. Install dependencies:
    ```bash
-   npm install
-   # or
-   yarn
+   pnpm install
    ```
 
 3. Set up environment variables:
@@ -53,9 +51,7 @@ Kinisi is a mobile-responsive web application that builds personalized, adaptive
 
 4. Run the development server:
    ```bash
-   npm run dev
-   # or
-   yarn dev
+   pnpm dev
    ```
 
 5. Open [http://localhost:3000](http://localhost:3000) in your browser.
@@ -88,20 +84,34 @@ Notes:
 - Confirmation emails redirect to `${NEXT_PUBLIC_SITE_URL}/survey` after verification.
 - For local dev, `.env.local` is recommended. In production, configure these in your hosting provider.
 
+## Security & API Hardening
+
+- Generic error messages returned to clients; full error details are logged server-side only.
+- Strict input validation and safe narrowing of `unknown` types (avoid `any`).
+- Narrowed database selects and minimal response payloads.
+- Client requests only include required fields; unnecessary headers/bodies removed.
+
 ## Project Structure
 
 ```
-kinisi-app/
-├── app/                    # App Router
-│   ├── login/              # Login page
-│   ├── register/           # Registration page
-│   ├── forgot-password/    # Password reset
-│   └── dashboard/          # Protected dashboard
-├── components/             # Reusable components
-│   ├── context/            # React context providers
-│   └── ui/                 # UI components
-├── public/                 # Static files
-└── utils/                  # Utility functions
+Kinisi/
+├── app/                     # App Router (API routes under app/api/**)
+│   ├── login/               # Login page
+│   ├── register/            # Registration page
+│   ├── forgot-password/     # Password reset
+│   ├── dashboard/           # Protected dashboard
+│   └── api/                 # Next.js API routes
+├── components/              # Reusable components
+│   ├── context/             # React context providers
+│   ├── dashboard/           # Dashboard UI
+│   ├── home/                # Landing page sections
+│   └── program/             # Program actions & calendar UI
+├── utils/                   # Utilities (Supabase client, chains, helpers)
+├── types/                   # Shared TypeScript types
+├── e2e/                     # Playwright E2E tests
+├── __tests__/               # Jest unit/integration tests
+├── public/                  # Static files
+└── supabase/                # DB migrations and local dev tooling
 ```
 
 ## Contributing

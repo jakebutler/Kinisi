@@ -8,6 +8,12 @@
   --brand-apricot: #FBCEB1;   /* apricot */
   --brand-rose: #AA98A9;      /* rose-quartz */
   --brand-puce: #CC8899;      /* puce */
+  /* Brand gradient stops (design tokens) */
+  --brand-grad-from: var(--brand-puce);
+  --brand-grad-mid: var(--brand-rose);
+  --brand-grad-to: var(--brand-apricot);
+  /* Focus ring */
+  --focus-ring: var(--brand-puce);
 }
 
 @theme inline {
@@ -40,7 +46,7 @@ body {
 
 /* Brand gradient utilities */
 .btn-gradient {
-  background-image: linear-gradient(135deg, var(--brand-puce), var(--brand-rose), var(--brand-apricot));
+  background-image: linear-gradient(135deg, var(--brand-grad-from), var(--brand-grad-mid), var(--brand-grad-to));
   color: white;
 }
 
@@ -49,7 +55,32 @@ body {
 }
 
 .btn-gradient:focus-visible {
-  outline: 2px solid color(display-p3 0.5 0.2 0.3);
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+/* Reusable button classes */
+.btn-primary {
+  @apply inline-flex items-center justify-center h-10 min-w-[180px] px-4 py-2 rounded-md text-white transition-all duration-200;
+  background-image: linear-gradient(135deg, var(--brand-grad-from), var(--brand-grad-mid), var(--brand-grad-to));
+}
+
+.btn-primary[disabled] {
+  background-image: none;
+  background-color: #9ca3af; /* gray-400 */
+}
+
+.btn-primary:focus-visible {
+  outline: 2px solid var(--focus-ring);
+  outline-offset: 2px;
+}
+
+.btn-secondary {
+  @apply inline-flex items-center justify-center h-10 px-4 py-2 rounded-md border border-gray-300 text-gray-800 hover:bg-gray-50 transition-colors;
+}
+
+.btn-secondary:focus-visible {
+  outline: 2px solid var(--focus-ring);
   outline-offset: 2px;
 }
 
@@ -58,7 +89,7 @@ body {
 }
 
 .progress-inner {
-  background-image: linear-gradient(90deg, var(--brand-puce), var(--brand-rose), var(--brand-apricot));
+  background-image: linear-gradient(90deg, var(--brand-grad-from), var(--brand-grad-mid), var(--brand-grad-to));
 }
 
 /* Accessibility: global focus styles */
@@ -68,7 +99,7 @@ button:focus-visible,
 input:focus-visible,
 select:focus-visible,
 textarea:focus-visible {
-  outline: 2px solid var(--brand-puce);
+  outline: 2px solid var(--focus-ring);
   outline-offset: 3px;
 }
 

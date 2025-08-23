@@ -164,7 +164,7 @@ const SurveyResultsPage = () => {
         <div className="text-center py-8">
           <p className="text-gray-600 mb-4">No survey responses found.</p>
           <button
-            className="btn-gradient text-white px-4 py-2 rounded"
+            className="btn-primary"
             onClick={() => router.push('/survey')}
           >
             Take the Survey
@@ -188,7 +188,7 @@ const SurveyResultsPage = () => {
             
             <div className="mt-6">
               <button
-                className="btn-gradient text-white px-4 py-2 text-sm rounded"
+                className="btn-primary"
                 onClick={() => router.push("/survey")}
               >
                 Edit Survey

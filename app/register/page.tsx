@@ -95,7 +95,7 @@ export default function RegisterPage() {
         {success && <div className="mb-2 text-green-700">{success}</div>}
         <button
           type="submit"
-          className="w-full btn-gradient text-white py-2 rounded disabled:opacity-50"
+          className="w-full btn-primary disabled:opacity-50"
           disabled={loading}
         >
           {loading ? "Registering..." : "Register"}

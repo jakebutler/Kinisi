@@ -332,6 +332,15 @@ Chat Assistant: Orchestrates routing between agents
 
 
 
+🔒 Non-functional: Security & Privacy
+
+- Sanitize API errors: return generic client messages; log full details server-side only.
+- Strict input validation; avoid `any`, narrow `unknown` types safely.
+- Narrow DB selects and minimize response payloads.
+- Client requests include only necessary fields; omit superfluous headers/bodies.
+- Deployment on Vercel with environment secrets; previews for PRs.
+
+
 📊 Intake Survey Field Coverage
 Includes:
 Medical clearance

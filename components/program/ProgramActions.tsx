@@ -114,7 +114,7 @@ export default function ProgramActions({ programId, status }: { programId: strin
           <button
             onClick={onGenerateSchedule}
             disabled={disabled}
-            className={`px-4 py-2 rounded text-white disabled:opacity-50 ${disabled ? "bg-gray-400" : "btn-gradient"}`}
+            className="btn-primary disabled:opacity-50"
             title="Generate a schedule with start times for each session"
           >
             {loading === "schedule" ? "Scheduling..." : "Generate Schedule"}
@@ -130,14 +130,14 @@ export default function ProgramActions({ programId, status }: { programId: strin
           <button
             onClick={onSubmitFeedback}
             disabled={disabled}
-            className={`px-4 py-2 rounded text-white disabled:opacity-50 ${disabled ? "bg-gray-400" : "btn-gradient"}`}
+            className="btn-primary disabled:opacity-50"
           >
             {loading === "feedback" ? "Submitting..." : "Submit Feedback"}
           </button>
           <button
             onClick={onRevise}
             disabled={disabled}
-            className={`px-4 py-2 rounded text-white disabled:opacity-50 ${disabled ? "bg-gray-400" : "btn-gradient"}`}
+            className="btn-primary disabled:opacity-50"
           >
             {loading === "revise" ? "Revising..." : "Revise Program"}
           </button>

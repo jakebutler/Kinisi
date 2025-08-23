@@ -118,3 +118,14 @@ jest.mock('next/router', () => ({
     asPath: '/'
   }))
 }));
+
+// Mock next/navigation (App Router) used by client components
+jest.mock('next/navigation', () => ({
+  useRouter: jest.fn(() => ({
+    push: jest.fn(),
+    replace: jest.fn(),
+    refresh: jest.fn(),
+    prefetch: jest.fn(),
+  })),
+  redirect: jest.fn(),
+}));
