@@ -1,0 +1,116 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Physical Activity Intake Form",
+    "type": "object",
+    "required": ["medicalClearance", "currentPain", "activityFrequency", "physicalFunction", "intentToChange", "importance", "confidence", "sleep", "tobaccoUse", "primaryGoal", "activityPreferences", "equipmentAccess", "timeCommitment"],
+    "properties": {
+      "medicalClearance": {
+        "type": "string",
+        "enum": ["Yes", "No"],
+        "title": "Have you ever been told by a doctor that you should not exercise because of a medical condition?"
+      },
+      "currentPain": {
+        "type": "object",
+        "title": "Do you currently experience pain or injury that limits your physical activity?",
+        "properties": {
+          "hasPain": {
+            "type": "boolean"
+          },
+          "description": {
+            "type": "string",
+            "description": "Optional if hasPain is false"
+          }
+        },
+        "required": ["hasPain"]
+      },
+      "activityFrequency": {
+        "type": "string",
+        "enum": ["0", "1–2", "3–4", "5–7"],
+        "title": "On average, how many days per week do you do 30+ minutes of moderate-to-vigorous physical activity?"
+      },
+      "physicalFunction": {
+        "type": "string",
+        "enum": ["Excellent", "Good", "Fair", "Poor"],
+        "title": "How would you rate your overall physical function?"
+      },
+      "intentToChange": {
+        "type": "string",
+        "enum": ["Yes", "No", "Not sure"],
+        "title": "Do you intend to increase your physical activity in the next 30 days?"
+      },
+      "importance": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10,
+        "title": "On a scale of 0–10, how important is it for you to become more physically active?"
+      },
+      "confidence": {
+        "type": "integer",
+        "minimum": 0,
+        "maximum": 10,
+        "title": "On a scale of 0–10, how confident are you in your ability to follow an exercise plan?"
+      },
+      "sleep": {
+        "type": "string",
+        "enum": ["Less than 5", "5–6", "7–8", "More than 8"],
+        "title": "How many hours of sleep do you usually get per night?"
+      },
+      "tobaccoUse": {
+        "type": "string",
+        "enum": ["Yes", "No"],
+        "title": "Do you currently smoke or use tobacco?"
+      },
+      "primaryGoal": {
+        "type": "string",
+        "title": "What is your top goal for being physically active?",
+        "enum": ["Improve health", "Lose weight", "Gain strength", "Reduce pain", "Feel better/energized", "Other"],
+        "default": "Improve health"
+      },
+      "activityPreferences": {
+        "type": "array",
+        "title": "What types of physical activity do you enjoy or want to include in your routine?",
+        "items": {
+          "type": "string",
+          "enum": ["Walking/hiking", "Strength training", "Yoga/stretching", "Group classes", "Sports", "Cycling", "Swimming", "Home workouts", "Other"]
+        },
+        "uniqueItems": true
+      },
+      "otherActivityPreferences": {
+        "type": "string",
+        "title": "What other types of physical activity do you enjoy or want to include in your routine?"
+      },
+      "equipmentAccess": {
+        "type": "array",
+        "title": "What equipment or facilities do you have access to?",
+        "items": {
+          "type": "string",
+          "enum": ["None / Bodyweight only", "Dumbbells or resistance bands", "Gym with machines/weights", "Cardio equipment", "Outdoor space", "Pool", "Other"]
+        },
+        "uniqueItems": true
+      },
+      "otherEquipmentAccess": {
+        "type": "string",
+        "title": "What other equipment or facilities do you have access to?"
+      },
+      "timeCommitment": {
+        "type": "object",
+        "title": "How much time can you realistically commit to physical activity each week?",
+        "properties": {
+          "daysPerWeek": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 7
+          },
+          "minutesPerSession": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "preferredTimeOfDay": {
+            "type": "string",
+            "enum": ["Morning", "Afternoon", "Evening", "Flexible"]
+          }
+        },
+        "required": ["daysPerWeek", "minutesPerSession", "preferredTimeOfDay"]
+      }
+    }
+  }

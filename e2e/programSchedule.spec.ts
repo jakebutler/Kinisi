@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures/auth';
 
 // Preconditions:
 // - Dev server running (playwright.config.ts baseURL)

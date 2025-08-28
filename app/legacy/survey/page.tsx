@@ -482,35 +482,37 @@ const SurveyPage = () => {
         {
           const numVal = typeof value === 'number' ? value : (value === '' ? '' : Number(value));
           if (isZeroToTenScale(question)) {
-            const v = typeof numVal === 'number' && !isNaN(numVal) ? numVal : 0;
-            return (
-              <div>
-                <div className="flex items-center justify-between mb-2 text-sm text-gray-600">
-                  <span>0</span>
-                  <span className="font-medium text-gray-900">{v}</span>
-                  <span>10</span>
-                </div>
-                <input
-                  type="range"
-                  min={0}
-                  max={10}
-                  step={1}
-                  value={v}
-                  onInput={(e) => handleChangeFn(Number((e.target as HTMLInputElement).value))}
-                  onChange={(e) => handleChangeFn(Number(e.target.value))}
-                  className="w-full accent-[var(--brand-puce)]"
-                  aria-valuemin={0}
-                  aria-valuemax={10}
-                  aria-valuenow={v}
-                />
-                <div className="mt-2 grid grid-cols-11 text-[10px] text-gray-500">
-                  {Array.from({ length: 11 }).map((_, i) => (
-                    <span key={i} className="text-center">{i}</span>
-                  ))}
-                </div>
+          const v = typeof numVal === 'number' && !isNaN(numVal) ? numVal : 0;
+          return (
+            <div>
+              <div className="mb-2 text-sm text-gray-600 flex items-center gap-2">
+                <span className="text-gray-500">Selected:</span>
+                <span className="font-semibold text-gray-900" data-testid="scale-selected-value">{v}</span>
               </div>
-            );
-          }
+              <div className="grid grid-cols-11 gap-1 sm:gap-2" role="group" aria-label="0 to 10 scale" data-testid="scale-0-10">
+                {Array.from({ length: 11 }).map((_, i) => {
+                  const selected = v === i;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      role="button"
+                      aria-pressed={selected}
+                      onClick={() => handleChangeFn(i)}
+                      className={`h-10 sm:h-12 rounded-md border text-sm font-medium transition ${selected
+                        ? 'bg-[var(--brand-puce)] text-white border-[var(--brand-puce)]'
+                        : 'bg-white text-gray-800 border-gray-300 hover:border-gray-400'}`}
+                      data-testid={`scale-box-${i}`}
+                    >
+                      {i}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+  
           const v = typeof numVal === 'number' && !isNaN(numVal) ? numVal : (question.min ?? 0);
           const decrement = () => handleChangeFn(Math.max((question.min ?? Number.NEGATIVE_INFINITY), v - 1));
           const increment = () => handleChangeFn(Math.min((question.max ?? Number.POSITIVE_INFINITY), v + 1));

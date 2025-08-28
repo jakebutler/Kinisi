@@ -72,9 +72,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, [router, pathname, hasHandledInitialRedirect]);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-    setUser(null);
-    setSession(null);
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      setUser(null);
+      setSession(null);
+      router.push('/login');
+      // In some test environments, Next.js router may not implement refresh
+      // Use optional chaining to avoid throwing in tests
+      (router as any)?.refresh?.();
+    }
   };
 
   return (
