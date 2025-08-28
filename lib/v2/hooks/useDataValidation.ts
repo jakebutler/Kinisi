@@ -1,112 +1,186 @@
 import { useState, useCallback } from 'react';
-import { z } from 'zod';
 
-// Validation schemas
-export const SurveyResponseSchema = z.object({
-  selectedExercises: z.array(z.string()).min(1, 'At least one exercise must be selected'),
-  injuries: z.string().min(1, 'Injury information is required'),
-  sessionDuration: z.string().min(1, 'Session duration is required'),
-  confidenceLevel: z.number().min(1).max(10),
-  activityLikelihood: z.string().min(1, 'Activity likelihood is required')
-});
+// Simple validation functions
+const validateSurveyResponse = (data: any): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  
+  if (!data.selectedExercises || data.selectedExercises.length === 0) {
+    errors.push('At least one exercise must be selected');
+  }
+  if (!data.injuries || data.injuries.trim().length === 0) {
+    errors.push('Injury information is required');
+  }
+  if (!data.sessionDuration || data.sessionDuration.trim().length === 0) {
+    errors.push('Session duration is required');
+  }
+  if (!data.confidenceLevel || data.confidenceLevel < 1 || data.confidenceLevel > 10) {
+    errors.push('Confidence level must be between 1 and 10');
+  }
+  if (!data.activityLikelihood || data.activityLikelihood.trim().length === 0) {
+    errors.push('Activity likelihood is required');
+  }
+  
+  return { isValid: errors.length === 0, errors };
+};
 
-export const AssessmentSchema = z.object({
-  id: z.string(),
-  user_id: z.string(),
-  survey_response_id: z.string(),
-  assessment: z.string().min(10, 'Assessment must be at least 10 characters'),
-  approved: z.boolean(),
-  created_at: z.string()
-});
+const validateAssessment = (data: any): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  
+  if (!data.id || typeof data.id !== 'string') {
+    errors.push('Assessment ID is required');
+  }
+  if (!data.user_id || typeof data.user_id !== 'string') {
+    errors.push('User ID is required');
+  }
+  if (!data.assessment || data.assessment.length < 10) {
+    errors.push('Assessment must be at least 10 characters');
+  }
+  if (typeof data.approved !== 'boolean') {
+    errors.push('Approval status is required');
+  }
+  
+  return { isValid: errors.length === 0, errors };
+};
 
-export const ExerciseProgramSchema = z.object({
-  id: z.string(),
-  user_id: z.string(),
-  status: z.enum(['draft', 'approved', 'rejected']),
-  program_json: z.array(z.object({
-    id: z.string(),
-    name: z.string().min(1),
-    goal: z.string().optional(),
-    exercises: z.array(z.object({
-      id: z.string(),
-      name: z.string().min(1),
-      sets: z.number().min(1),
-      reps: z.string().optional(),
-      duration: z.string().optional(),
-      targetMuscles: z.array(z.string()),
-      instructions: z.string().min(1)
-    })).min(1),
-    start_at: z.string().optional()
-  })).min(1),
-  created_at: z.string(),
-  updated_at: z.string(),
-  last_scheduled_at: z.string().optional(),
-  scheduling_preferences: z.any().optional()
-});
+const validateExerciseProgram = (data: any): { isValid: boolean; errors: string[] } => {
+  const errors: string[] = [];
+  
+  if (!data.id || typeof data.id !== 'string') {
+    errors.push('Program ID is required');
+  }
+  if (!data.user_id || typeof data.user_id !== 'string') {
+    errors.push('User ID is required');
+  }
+  if (!data.status || !['draft', 'approved', 'active'].includes(data.status)) {
+    errors.push('Valid status is required');
+  }
+  
+  return { isValid: errors.length === 0, errors };
+};
 
-interface ValidationError {
-  field: string;
-  message: string;
+// Type definitions
+export interface SurveyResponse {
+  selectedExercises: string[];
+  injuries: string;
+  sessionDuration: string;
+  confidenceLevel: number;
+  activityLikelihood: string;
 }
 
-interface UseDataValidationReturn {
-  errors: ValidationError[];
-  isValid: boolean;
-  validateSurveyResponse: (data: any) => boolean;
-  validateAssessment: (data: any) => boolean;
-  validateExerciseProgram: (data: any) => boolean;
-  clearErrors: () => void;
+export interface Assessment {
+  id: string;
+  user_id: string;
+  survey_response_id: string;
+  assessment: string;
+  approved: boolean;
+  created_at: string;
 }
 
-export const useDataValidation = (): UseDataValidationReturn => {
-  const [errors, setErrors] = useState<ValidationError[]>([]);
+export interface ExerciseProgram {
+  id: string;
+  user_id: string;
+  status: 'draft' | 'approved' | 'active';
+  program_json: any;
+  created_at: string;
+  updated_at: string;
+  last_scheduled_at?: string | null;
+  scheduling_preferences?: any;
+  weeks?: Array<{
+    weekNumber: number;
+    goal: string;
+    sessions: Array<{
+      id: string;
+      name: string;
+      goal: string;
+      exercises: any[];
+      start_at?: string;
+      duration?: number;
+    }>;
+  }>;
+}
 
-  const clearErrors = useCallback(() => {
-    setErrors([]);
-  }, []);
+interface ValidationResult<T> {
+  success: boolean;
+  data?: T;
+  errors?: string[];
+}
 
-  const validateData = useCallback((schema: z.ZodSchema, data: any, context: string): boolean => {
+interface ValidationState {
+  isValidating: boolean;
+  errors: Record<string, string[]>;
+}
+
+export function useDataValidation() {
+  const [validationState, setValidationState] = useState<ValidationState>({
+    isValidating: false,
+    errors: {}
+  });
+
+  const validateData = useCallback(async <T>(
+    data: unknown,
+    validator: (data: any) => { isValid: boolean; errors: string[] }
+  ): Promise<ValidationResult<T>> => {
+    setValidationState(prev => ({ ...prev, isValidating: true }));
+    
     try {
-      schema.parse(data);
-      setErrors([]);
-      return true;
-    } catch (error) {
-      if (error instanceof z.ZodError) {
-        const validationErrors: ValidationError[] = error.errors.map(err => ({
-          field: err.path.join('.'),
-          message: err.message
-        }));
-        setErrors(validationErrors);
-        console.error(`${context} validation failed:`, validationErrors);
+      const result = validator(data);
+      if (result.isValid) {
+        setValidationState({ isValidating: false, errors: {} });
+        return { success: true, data: data as T };
+      } else {
+        setValidationState({ 
+          isValidating: false, 
+          errors: { general: result.errors } 
+        });
+        return { success: false, errors: result.errors };
       }
-      return false;
+    } catch (error) {
+      const errorMessage = error instanceof Error ? error.message : 'Validation failed';
+      setValidationState({ 
+        isValidating: false, 
+        errors: { general: [errorMessage] } 
+      });
+      return { success: false, errors: [errorMessage] };
     }
   }, []);
 
-  const validateSurveyResponse = useCallback((data: any): boolean => {
-    return validateData(SurveyResponseSchema, data, 'Survey Response');
+  const validateSurveyResponseData = useCallback(async (data: unknown) => {
+    return validateData<SurveyResponse>(data, validateSurveyResponse);
   }, [validateData]);
 
-  const validateAssessment = useCallback((data: any): boolean => {
-    return validateData(AssessmentSchema, data, 'Assessment');
+  const validateAssessmentData = useCallback(async (data: unknown) => {
+    return validateData<Assessment>(data, validateAssessment);
   }, [validateData]);
 
-  const validateExerciseProgram = useCallback((data: any): boolean => {
-    return validateData(ExerciseProgramSchema, data, 'Exercise Program');
+  const validateExerciseProgramData = useCallback(async (data: unknown) => {
+    return validateData<ExerciseProgram>(data, validateExerciseProgram);
   }, [validateData]);
+
+  const clearErrors = useCallback(() => {
+    setValidationState(prev => ({ ...prev, errors: {} }));
+  }, []);
+
+  const setFieldError = useCallback((field: string, errors: string[]) => {
+    setValidationState(prev => ({
+      ...prev,
+      errors: { ...prev.errors, [field]: errors }
+    }));
+  }, []);
 
   return {
-    errors,
-    isValid: errors.length === 0,
-    validateSurveyResponse,
-    validateAssessment,
-    validateExerciseProgram,
-    clearErrors
+    validationState,
+    validateData,
+    validateSurveyResponse: validateSurveyResponseData,
+    validateAssessment: validateAssessmentData,
+    validateExerciseProgram: validateExerciseProgramData,
+    clearErrors,
+    setFieldError,
+    isValidating: validationState.isValidating,
+    errors: validationState.errors
   };
-};
+}
 
-// Utility functions for data sanitization
-export const sanitizeUserInput = (input: string): string => {
+const sanitizeUserInput = (input: string): string => {
   return input.trim().replace(/[<>]/g, '');
 };
 
