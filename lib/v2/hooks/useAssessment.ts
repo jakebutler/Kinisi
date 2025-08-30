@@ -73,7 +73,12 @@ export const useAssessment = () => {
     }
   };
 
-  const requestAssessmentUpdate = async (assessmentId: string, feedback: string): Promise<Assessment | null> => {
+  const requestAssessmentUpdate = async (
+    assessmentId: string, 
+    feedback: string, 
+    currentAssessment: string, 
+    surveyResponses: Record<string, any>
+  ): Promise<Assessment | null> => {
     setLoading(true);
     setError(null);
     
@@ -90,7 +95,12 @@ export const useAssessment = () => {
       const response = await fetch('/api/assessment/feedback', {
         method: 'POST',
         headers,
-        body: JSON.stringify({ assessmentId, feedback }),
+        body: JSON.stringify({ 
+          currentAssessment,
+          feedback,
+          surveyResponses,
+          revisionOfAssessmentId: assessmentId
+        }),
       });
 
       if (!response.ok) {

@@ -11,7 +11,7 @@ import { useUI } from '@/lib/v2/contexts/UIContext';
 
 export default function AssessmentPage() {
   const router = useRouter();
-  const { assessment, setCurrentStep, setAssessment } = useOnboarding();
+  const { assessment, surveyData, setCurrentStep, setAssessment } = useOnboarding();
   const { approveAssessment, requestAssessmentUpdate, loading } = useAssessment();
   const { setLoading, addNotification } = useUI();
 
@@ -50,11 +50,16 @@ export default function AssessmentPage() {
   };
 
   const handleRequestUpdate = async (feedback: string) => {
-    if (!assessment?.id) return;
+    if (!assessment?.id || !assessment?.assessment || !surveyData) return;
 
     try {
       setLoading(true);
-      const updatedAssessment = await requestAssessmentUpdate(assessment.id, feedback);
+      const updatedAssessment = await requestAssessmentUpdate(
+        assessment.id, 
+        feedback, 
+        assessment.assessment, 
+        surveyData
+      );
       
       if (updatedAssessment) {
         setAssessment(updatedAssessment);

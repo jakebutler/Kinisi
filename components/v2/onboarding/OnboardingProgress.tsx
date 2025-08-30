@@ -20,16 +20,15 @@ const OnboardingProgress: React.FC<OnboardingProgressProps> = ({
       fontFamily: 'Nunito, "Nunito Fallback", sans-serif'
     }}>
       <div className="flex justify-between items-center relative px-6">
-        {/* Horizontal line that spans across all steps - adjusted to not extend past circles */}
-        <div className="absolute top-4 left-[22px] right-[22px] h-[2px] bg-gray-200"></div>
-        
-        {/* Colored line segments for completed steps */}
+        {/* Colored line segments for completed steps - positioned between circle centers */}
         {Array.from({
           length: steps.length - 1
         }).map((_, index) => {
           const isCompleted = index + 1 < currentStep;
-          const segmentCount = steps.length - 1;
-          const segmentWidth = `calc(100% / ${segmentCount})`;
+          const totalSteps = steps.length;
+          const containerWidth = `calc(100% - 48px)`; // Account for 24px padding on each side
+          const stepSpacing = `calc(${containerWidth} / ${totalSteps - 1})`;
+          
           return (
             <div 
               key={`line-${index}`} 
@@ -39,8 +38,8 @@ const OnboardingProgress: React.FC<OnboardingProgressProps> = ({
                   : 'bg-gray-200'
               }`} 
               style={{
-                left: `calc(${index} * ${segmentWidth} + 6px + 16px)`,
-                width: `calc(${segmentWidth} - 32px)`
+                left: `calc(24px + 16px + ${index} * ${stepSpacing})`,
+                width: `calc(${stepSpacing} - 32px)`
               }}
             />
           );

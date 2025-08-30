@@ -5,7 +5,7 @@ export const useProgram = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const generateProgram = async (assessmentId: string): Promise<ExerciseProgram | null> => {
+  const generateProgram = async (assessmentId: string, exerciseFilter: Record<string, any> = {}): Promise<ExerciseProgram | null> => {
     setLoading(true);
     setError(null);
     
@@ -15,7 +15,7 @@ export const useProgram = () => {
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify({ assessmentId }),
+        body: JSON.stringify({ assessmentId, exerciseFilter }),
       });
 
       if (!response.ok) {

@@ -30,7 +30,7 @@ export default function ProgramPage() {
       setIsGenerating(true);
       setLoading(true);
       
-      const program = await generateProgram(assessment.id);
+      const program = await generateProgram(assessment.id, {});
       
       if (program) {
         setExerciseProgram(program);
