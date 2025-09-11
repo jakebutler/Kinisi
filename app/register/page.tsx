@@ -1,14 +1,22 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 
-export default function RegisterPage() {
+function RegisterPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [accessCode, setAccessCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -49,7 +57,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center" suppressHydrationWarning>
       <form
         className="w-full max-w-sm bg-white p-8 rounded shadow"
         onSubmit={handleRegister}
@@ -109,3 +117,5 @@ export default function RegisterPage() {
     </div>
   );
 }
+
+export default dynamic(() => Promise.resolve(RegisterPage), { ssr: false });

@@ -26,6 +26,66 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const getSession = async () => {
+      // Handle Supabase auth callback parameters on initial load
+      try {
+        if (typeof window !== 'undefined') {
+          const href = window.location.href;
+          const url = new URL(href);
+          const params = url.searchParams;
+          const hash = window.location.hash || '';
+
+          let didAuthCallback = false;
+
+          // New PKCE code flow
+          const code = params.get('code');
+          if (code) {
+            try {
+              await supabase.auth.exchangeCodeForSession(href);
+              didAuthCallback = true;
+            } catch (e) {
+              console.warn('[AuthProvider] exchangeCodeForSession failed', e);
+            }
+          }
+
+          // Token hash flow (email confirmation)
+          const tokenHash = params.get('token_hash');
+          const type = params.get('type');
+          if (!didAuthCallback && tokenHash && (type === 'signup' || type === 'magiclink' || type === 'recovery')) {
+            try {
+              await supabase.auth.verifyOtp({ token_hash: tokenHash, type: type as any });
+              didAuthCallback = true;
+            } catch (e) {
+              console.warn('[AuthProvider] verifyOtp failed', e);
+            }
+          }
+
+          // Legacy hash-based tokens in URL fragment
+          if (!didAuthCallback && hash.includes('access_token') && hash.includes('refresh_token')) {
+            const frag = new URLSearchParams(hash.replace(/^#/, ''));
+            const access_token = frag.get('access_token') || undefined;
+            const refresh_token = frag.get('refresh_token') || undefined;
+            if (access_token && refresh_token) {
+              try {
+                await supabase.auth.setSession({ access_token, refresh_token });
+                didAuthCallback = true;
+              } catch (e) {
+                console.warn('[AuthProvider] setSession from hash failed', e);
+              }
+            }
+          }
+
+          // Clean auth params from URL after handling
+          if (didAuthCallback) {
+            try {
+              const cleanUrl = `${url.origin}${url.pathname}`;
+              window.history.replaceState({}, document.title, cleanUrl);
+            } catch {}
+          }
+        }
+      } catch (e) {
+        // Non-fatal; proceed to session fetch
+      }
+
       const { data } = await supabase.auth.getSession();
       if (data?.session) {
         setSession(data.session);

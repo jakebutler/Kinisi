@@ -34,6 +34,20 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
+    // Insert a new survey_responses row (history model)
+    const { data: insertedSurvey, error: insertSurveyError } = await supabase
+      .from('survey_responses')
+      .insert([{ user_id: user.id, response: surveyResponses }])
+      .select('id')
+      .single();
+
+    if (insertSurveyError || !insertedSurvey) {
+      console.error('[assessment] Failed to store survey response:', insertSurveyError);
+      return NextResponse.json({ error: 'Failed to store survey response' }, { status: 500 });
+    }
+
+    const survey_response_id = insertedSurvey.id as string;
+
     // Call LangChain-powered assessment generator
     let assessment: string;
     try {
@@ -42,20 +56,6 @@ export async function POST(req: NextRequest) {
       console.error('[assessment] Generation failed:', e);
       return NextResponse.json({ error: 'Failed to generate assessment' }, { status: 500 });
     }
-
-    // Find the latest survey_response_id for this user
-    const { data: surveyRows, error: surveyError } = await supabase
-      .from("survey_responses")
-      .select("id")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1);
-
-    if (surveyError || !surveyRows || surveyRows.length === 0) {
-      return NextResponse.json({ error: "Could not find survey response for user" }, { status: 404 });
-    }
-
-    const survey_response_id = surveyRows[0].id;
 
     // Insert assessment into the database
     const { data: insertData, error: insertError } = await supabase
