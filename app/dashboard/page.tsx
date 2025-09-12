@@ -81,6 +81,7 @@ export default function DashboardPage() {
   const [surveyCompleted, setSurveyCompleted] = useState(false);
   const [surveyResponse, setSurveyResponse] = useState<Record<string, unknown> | null>(null);
   const [assessment, setAssessment] = useState<string | null>(null);
+  const [assessmentId, setAssessmentId] = useState<string | null>(null);
   const [assessmentApproved, setAssessmentApproved] = useState(false);
   const [isGeneratingAssessment, setIsGeneratingAssessment] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -166,6 +167,7 @@ export default function DashboardPage() {
             try {
               const { data: newAssessment } = await generateAndStoreAssessment(user.id, responseData[0].response);
               setAssessment(newAssessment?.assessment || null);
+              setAssessmentId(newAssessment?.id || null);
             } catch (genError) {
               console.error('Error generating assessment:', genError);
               setError('Failed to generate assessment');
@@ -175,6 +177,7 @@ export default function DashboardPage() {
           }
         } else {
           setAssessment(assessmentData.assessment);
+          setAssessmentId(assessmentData.id);
           // Check if assessment has been approved (we'll add this field to the database)
           setAssessmentApproved(assessmentData.approved || false);
         }
@@ -301,15 +304,28 @@ export default function DashboardPage() {
     setIsWorking(true);
     setError(null);
     try {
+      // Attach access token for server-side user lookup and include revision id for exact survey linkage
+      const { data: sess } = await supabase.auth.getSession();
+      const accessToken = sess?.session?.access_token;
       const res = await fetch('/api/assessment/feedback', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ currentAssessment: assessment, feedback, surveyResponses: surveyResponse }),
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          currentAssessment: assessment,
+          feedback,
+          surveyResponses: surveyResponse,
+          revisionOfAssessmentId: assessmentId || undefined,
+        }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(data?.error || 'Failed to submit feedback');
       if (data?.assessment) {
         setAssessment(data.assessment);
+        if (data?.assessmentId) setAssessmentId(data.assessmentId);
       }
       setFeedback("");
       setIsRequestingChanges(false);

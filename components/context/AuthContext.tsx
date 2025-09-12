@@ -86,10 +86,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         // Non-fatal; proceed to session fetch
       }
 
-      const { data } = await supabase.auth.getSession();
-      if (data?.session) {
-        setSession(data.session);
-        setUser(data.session.user);
+      const result = await supabase.auth.getSession();
+      const data = (result && (result as any).data) ? (result as any).data : { session: null };
+      if (data && data.session) {
+        setSession(data.session as any);
+        setUser((data.session as any).user);
       } else {
         setSession(null);
         setUser(null);
@@ -97,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setLoading(false);
     };
     getSession();
-    const { data: listener } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const onAuth = supabase.auth.onAuthStateChange(async (event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
       
@@ -126,8 +127,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         setHasHandledInitialRedirect(false);
       }
     });
+    const subscription = (onAuth && (onAuth as any).data && (onAuth as any).data.subscription) || { unsubscribe: () => {} };
     return () => {
-      listener.subscription.unsubscribe();
+      try { subscription.unsubscribe(); } catch {}
     };
   }, [router, pathname, hasHandledInitialRedirect]);
 

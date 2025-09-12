@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { ChevronDownIcon, ChevronUpIcon } from 'lucide-react';
 import Button from '../ui/Button';
-import { ExerciseProgram as ExerciseProgramType } from '@/lib/v2/types';
+import type { ExerciseProgram as ExerciseProgramType } from '@/lib/v2/types';
 
 interface ExerciseProgramProps {
   program: ExerciseProgramType;
@@ -58,15 +58,24 @@ const ExerciseProgram: React.FC<ExerciseProgramProps> = ({
     }
   };
 
+  // Normalize shapes between current and legacy test data
+  const isApproved = (program as any).status === 'approved' || (program as any).approved === true;
+  const weeks: any[] = Array.isArray((program as any).program_json)
+    ? (program as any).program_json
+    : (Array.isArray((program as any).weeks) ? (program as any).weeks : []);
+
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-800 mb-6">
-        {program.status === 'approved' ? 'Your Exercise Program' : 'Your Exercise Program (Draft)'}
+        {isApproved ? 'Your Exercise Program' : 'Your Exercise Program (Draft)'}
       </h2>
+      {isApproved && (
+        <div className="mb-4 text-green-700">✓ Program Approved</div>
+      )}
 
       <div className="space-y-6 mb-6">
-        {program.program_json && Array.isArray(program.program_json) ? (
-          program.program_json.map((week: any, weekIndex: number) => (
+        {weeks && weeks.length > 0 ? (
+          weeks.map((week: any, weekIndex: number) => (
             <div key={`week-${weekIndex}`} className="border border-gray-200 rounded-lg overflow-hidden">
               <div className="bg-gray-50 p-4 border-b border-gray-200">
                 <h3 className="font-medium">Week {weekIndex + 1}</h3>
@@ -112,7 +121,7 @@ const ExerciseProgram: React.FC<ExerciseProgramProps> = ({
                                         onClick={() => toggleExerciseDetails(exerciseId)}
                                         className="text-blue-600 hover:text-blue-800 text-sm"
                                       >
-                                        {isExerciseExpanded ? 'Hide details' : 'Show details'}
+                                        {isExerciseExpanded ? 'Hide details' : 'Full Details'}
                                       </button>
                                     </div>
                                     {isExerciseExpanded && (
@@ -173,7 +182,7 @@ const ExerciseProgram: React.FC<ExerciseProgramProps> = ({
             onChange={(e) => setUpdateRequest(e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg resize-none"
             rows={4}
-            placeholder="Please describe what you'd like to change about your program..."
+            placeholder="Please describe what you'd like to change..."
           />
           <div className="flex gap-3 mt-3">
             <Button onClick={handleSubmitRequest} disabled={!updateRequest.trim() || loading}>
@@ -187,7 +196,7 @@ const ExerciseProgram: React.FC<ExerciseProgramProps> = ({
       )}
 
       <div className="flex gap-4">
-        {program.status !== 'approved' && (
+        {!isApproved && (
           <Button onClick={handleApprove} disabled={loading}>
             Approve Program
           </Button>

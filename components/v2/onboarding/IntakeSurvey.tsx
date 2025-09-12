@@ -4,9 +4,10 @@ import { Check, ArrowLeft, ArrowRight } from 'lucide-react';
 
 interface IntakeSurveyProps {
   onNext: (surveyData: any) => void;
+  submitting?: boolean;
 }
 
-const IntakeSurvey: React.FC<IntakeSurveyProps> = ({ onNext }) => {
+const IntakeSurvey: React.FC<IntakeSurveyProps> = ({ onNext, submitting = false }) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   
   // Survey state based on comprehensive schema
@@ -142,9 +143,17 @@ const IntakeSurvey: React.FC<IntakeSurveyProps> = ({ onNext }) => {
 
   const handleMinutesChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value.replace(/\D/g, '');
-    if (value === '' || (parseInt(value) >= 5 && parseInt(value) <= 180)) {
-      setTimeCommitment({ ...timeCommitment, minutesPerSession: value });
-    }
+    setTimeCommitment({ ...timeCommitment, minutesPerSession: value });
+  };
+
+  const handleMinutesBlur = () => {
+    const v = timeCommitment.minutesPerSession;
+    if (v === '') return;
+    let n = parseInt(v, 10);
+    if (isNaN(n)) n = 5;
+    if (n < 5) n = 5;
+    if (n > 180) n = 180;
+    setTimeCommitment({ ...timeCommitment, minutesPerSession: String(n) });
   };
 
   const goToNextQuestion = () => {
@@ -541,6 +550,7 @@ const IntakeSurvey: React.FC<IntakeSurveyProps> = ({ onNext }) => {
                 type="text"
                 value={timeCommitment.minutesPerSession}
                 onChange={handleMinutesChange}
+                onBlur={handleMinutesBlur}
                 className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
                 placeholder="Enter minutes (5-180)"
               />
@@ -624,10 +634,10 @@ const IntakeSurvey: React.FC<IntakeSurveyProps> = ({ onNext }) => {
         </Button>
         <Button
           onClick={goToNextQuestion}
-          disabled={!isCurrentQuestionValid}
+          disabled={!isCurrentQuestionValid || (isLastQuestion && submitting)}
           className="flex items-center"
         >
-          {isLastQuestion ? 'Complete' : 'Continue'}
+          {isLastQuestion ? (submitting ? 'Processing…' : 'Complete') : 'Continue'}
           {!isLastQuestion && <ArrowRight size={16} className="ml-2" />}
         </Button>
       </div>

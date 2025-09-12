@@ -48,7 +48,7 @@ describe('useDashboardData Hook', () => {
     
     // Setup default mocks
     mockUseUser.mockReturnValue({
-      user: mockUser,
+      user: mockUser as any,
       userStatus: 'active',
       loading: false,
       setUser: jest.fn(),
@@ -57,22 +57,34 @@ describe('useDashboardData Hook', () => {
       signOut: jest.fn()
     });
 
-    // Mock Supabase responses
-    mockSupabase.from = jest.fn().mockReturnValue({
-      select: jest.fn().mockReturnValue({
-        eq: jest.fn().mockReturnValue({
-          order: jest.fn().mockReturnValue({
-            limit: jest.fn().mockResolvedValue({
-              data: [],
-              error: null
-            })
-          })
-        })
-      })
-    });
+    // Helper to build a chainable query mock that supports multiple eq() calls
+    const makeQuery = (resultData: any[]) => {
+      const q: any = {};
+      q.select = jest.fn().mockReturnValue(q);
+      q.eq = jest.fn().mockReturnValue(q);
+      q.order = jest.fn().mockReturnValue(q);
+      q.limit = jest.fn().mockResolvedValue({ data: resultData, error: null });
+      return q;
+    };
+    // Expose on mockSupabase for reuse in tests
+    // @ts-expect-error - attach helper for test usage
+    mockSupabase.__makeQuery = makeQuery;
+    // Default: no data for any table
+    mockSupabase.from = jest.fn().mockReturnValue(makeQuery([]));
   });
 
   it('initializes with loading state', () => {
+    // Prevent auto-loading by returning no user for this test only
+    mockUseUser.mockReturnValue({
+      user: null as any,
+      userStatus: 'onboarding',
+      loading: false,
+      setUser: jest.fn(),
+      setUserStatus: jest.fn(),
+      refreshUserStatus: jest.fn(),
+      signOut: jest.fn()
+    });
+
     const { result } = renderHook(() => useDashboardData());
     
     expect(result.current.loading).toBe(true);
@@ -84,33 +96,12 @@ describe('useDashboardData Hook', () => {
 
   it('loads program data successfully', async () => {
     // Mock successful program response
+    const makeQuery = (mockSupabase as any).__makeQuery as (d: any[]) => any;
     mockSupabase.from = jest.fn().mockImplementation((table) => {
       if (table === 'exercise_programs') {
-        return {
-          select: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
-              order: jest.fn().mockReturnValue({
-                limit: jest.fn().mockResolvedValue({
-                  data: [mockProgram],
-                  error: null
-                })
-              })
-            })
-          })
-        };
+        return makeQuery([mockProgram]);
       }
-      return {
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            order: jest.fn().mockReturnValue({
-              limit: jest.fn().mockResolvedValue({
-                data: [],
-                error: null
-              })
-            })
-          })
-        })
-      };
+      return makeQuery([]);
     });
 
     const { result } = renderHook(() => useDashboardData());
@@ -125,33 +116,12 @@ describe('useDashboardData Hook', () => {
 
   it('loads assessment data successfully', async () => {
     // Mock successful assessment response
+    const makeQuery = (mockSupabase as any).__makeQuery as (d: any[]) => any;
     mockSupabase.from = jest.fn().mockImplementation((table) => {
       if (table === 'assessments') {
-        return {
-          select: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
-              order: jest.fn().mockReturnValue({
-                limit: jest.fn().mockResolvedValue({
-                  data: [mockAssessment],
-                  error: null
-                })
-              })
-            })
-          })
-        };
+        return makeQuery([mockAssessment]);
       }
-      return {
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            order: jest.fn().mockReturnValue({
-              limit: jest.fn().mockResolvedValue({
-                data: [],
-                error: null
-              })
-            })
-          })
-        })
-      };
+      return makeQuery([]);
     });
 
     const { result } = renderHook(() => useDashboardData());
@@ -166,33 +136,12 @@ describe('useDashboardData Hook', () => {
 
   it('loads survey data successfully', async () => {
     // Mock successful survey response
+    const makeQuery = (mockSupabase as any).__makeQuery as (d: any[]) => any;
     mockSupabase.from = jest.fn().mockImplementation((table) => {
       if (table === 'survey_responses') {
-        return {
-          select: jest.fn().mockReturnValue({
-            eq: jest.fn().mockReturnValue({
-              order: jest.fn().mockReturnValue({
-                limit: jest.fn().mockResolvedValue({
-                  data: [mockSurveyData],
-                  error: null
-                })
-              })
-            })
-          })
-        };
+        return makeQuery([mockSurveyData]);
       }
-      return {
-        select: jest.fn().mockReturnValue({
-          eq: jest.fn().mockReturnValue({
-            order: jest.fn().mockReturnValue({
-              limit: jest.fn().mockResolvedValue({
-                data: [],
-                error: null
-              })
-            })
-          })
-        })
-      };
+      return makeQuery([]);
     });
 
     const { result } = renderHook(() => useDashboardData());
@@ -268,60 +217,17 @@ describe('useDashboardData Hook', () => {
 
   it('loads all data types simultaneously', async () => {
     // Mock successful responses for all data types
+    const makeQuery = (mockSupabase as any).__makeQuery as (d: any[]) => any;
     mockSupabase.from = jest.fn().mockImplementation((table) => {
       switch (table) {
         case 'exercise_programs':
-          return {
-            select: jest.fn().mockReturnValue({
-              eq: jest.fn().mockReturnValue({
-                order: jest.fn().mockReturnValue({
-                  limit: jest.fn().mockResolvedValue({
-                    data: [mockProgram],
-                    error: null
-                  })
-                })
-              })
-            })
-          };
+          return makeQuery([mockProgram]);
         case 'assessments':
-          return {
-            select: jest.fn().mockReturnValue({
-              eq: jest.fn().mockReturnValue({
-                order: jest.fn().mockReturnValue({
-                  limit: jest.fn().mockResolvedValue({
-                    data: [mockAssessment],
-                    error: null
-                  })
-                })
-              })
-            })
-          };
+          return makeQuery([mockAssessment]);
         case 'survey_responses':
-          return {
-            select: jest.fn().mockReturnValue({
-              eq: jest.fn().mockReturnValue({
-                order: jest.fn().mockReturnValue({
-                  limit: jest.fn().mockResolvedValue({
-                    data: [mockSurveyData],
-                    error: null
-                  })
-                })
-              })
-            })
-          };
+          return makeQuery([mockSurveyData]);
         default:
-          return {
-            select: jest.fn().mockReturnValue({
-              eq: jest.fn().mockReturnValue({
-                order: jest.fn().mockReturnValue({
-                  limit: jest.fn().mockResolvedValue({
-                    data: [],
-                    error: null
-                  })
-                })
-              })
-            })
-          };
+          return makeQuery([]);
       }
     });
 

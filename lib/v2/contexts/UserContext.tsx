@@ -25,7 +25,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const result = await supabase.auth.getSession?.();
+      const session = result && (result as any).data ? (result as any).data.session : null;
       if (session?.user) {
         // Determine user status based on onboarding completion
         const onboardingCompleted = await hasCompletedOnboarding(session.user.id);
@@ -46,7 +47,7 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
     getInitialSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+    const onAuth = supabase.auth.onAuthStateChange?.(
       async (event: any, session: any) => {
         if (session?.user) {
           // Determine user status based on onboarding completion
@@ -68,6 +69,8 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
       }
     );
+
+    const subscription = (onAuth && (onAuth as any).data && (onAuth as any).data.subscription) || { unsubscribe: () => {} };
 
     return () => subscription.unsubscribe();
   }, []);

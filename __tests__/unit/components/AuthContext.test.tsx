@@ -3,22 +3,25 @@ import React from 'react';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import { AuthProvider, useAuth } from '../../../components/context/AuthContext';
-import { supabase } from '../../../utils/supabaseClient';
-import { getPostLoginRedirect } from '../../../utils/userFlow';
+import { supabase } from '@/utils/supabaseClient';
+import { getPostLoginRedirect } from '@/utils/userFlow';
 import { mockUser, mockSession } from '../../fixtures/users';
 
 // Mock dependencies
-jest.mock('../../../utils/supabaseClient', () => ({
+jest.mock('@/utils/supabaseClient', () => ({
   supabase: {
     auth: {
       getSession: jest.fn(),
-      onAuthStateChange: jest.fn(),
-      signOut: jest.fn()
+      onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
+      signOut: jest.fn(),
+      exchangeCodeForSession: jest.fn(),
+      verifyOtp: jest.fn(),
+      setSession: jest.fn(),
     }
   }
 }));
 
-jest.mock('../../../utils/userFlow');
+jest.mock('@/utils/userFlow');
 
 const mockPush = jest.fn();
 const mockReplace = jest.fn();
@@ -38,6 +41,9 @@ const mockSupabase = supabase as jest.Mocked<typeof supabase>;
 const getSessionMock = mockSupabase.auth.getSession as unknown as jest.Mock;
 const onAuthStateChangeMock = mockSupabase.auth.onAuthStateChange as unknown as jest.Mock;
 const signOutMock = mockSupabase.auth.signOut as unknown as jest.Mock;
+const exchangeCodeForSessionMock = mockSupabase.auth.exchangeCodeForSession as unknown as jest.Mock;
+const verifyOtpMock = mockSupabase.auth.verifyOtp as unknown as jest.Mock;
+const setSessionMock = mockSupabase.auth.setSession as unknown as jest.Mock;
 const mockGetPostLoginRedirect = getPostLoginRedirect as jest.MockedFunction<typeof getPostLoginRedirect>;
 
 // Test component to access auth context
@@ -66,13 +72,81 @@ describe('AuthContext', () => {
     mockUsePathname.mockReturnValue('/');
     
     // Set default getSession mock to return no session
-    getSessionMock.mockResolvedValue({
-      data: { session: null, user: null },
-      error: null
+    getSessionMock.mockResolvedValue({ data: { session: null }, error: null });
+    // Ensure onAuthStateChange returns a subscription object each test
+    onAuthStateChangeMock.mockReturnValue({ data: { subscription: { unsubscribe: jest.fn() } } });
+  });
+
+  describe('auth callback handling on mount', () => {
+    const originalLocation = window.location.href;
+    let replaceSpy: jest.SpyInstance;
+
+    beforeEach(() => {
+      // Reset URL before each test
+      replaceSpy = jest.spyOn(window.history, 'replaceState').mockImplementation(() => {});
+      exchangeCodeForSessionMock.mockResolvedValue({ data: { session: mockSession }, error: null });
+      verifyOtpMock.mockResolvedValue({ data: { session: mockSession }, error: null } as any);
+      setSessionMock.mockResolvedValue({ data: { session: mockSession }, error: null } as any);
     });
-    
-    mockSupabase.auth.onAuthStateChange.mockReturnValue({
-      data: { subscription: { unsubscribe: jest.fn() } }
+
+    afterEach(() => {
+      replaceSpy.mockRestore();
+      // Reset URL without triggering jsdom navigation
+      window.history.replaceState({}, '', originalLocation);
+    });
+
+    it('exchanges PKCE code and cleans URL', async () => {
+      const href = 'http://localhost/some?code=abc123';
+      window.history.pushState({}, '', href);
+
+      await act(async () => {
+        render(
+          <AuthProvider>
+            <TestComponent />
+          </AuthProvider>
+        );
+      });
+
+      await waitFor(() => {
+        expect(exchangeCodeForSessionMock).toHaveBeenCalledWith(href);
+        expect(replaceSpy).toHaveBeenCalled();
+      });
+    });
+
+    it('verifies otp for token_hash signup and cleans URL', async () => {
+      const href = 'http://localhost/some?token_hash=thash&type=signup';
+      window.history.pushState({}, '', href);
+
+      await act(async () => {
+        render(
+          <AuthProvider>
+            <TestComponent />
+          </AuthProvider>
+        );
+      });
+
+      await waitFor(() => {
+        expect(verifyOtpMock).toHaveBeenCalledWith({ token_hash: 'thash', type: 'signup' as any });
+        expect(replaceSpy).toHaveBeenCalled();
+      });
+    });
+
+    it('sets session from hash tokens', async () => {
+      const href = 'http://localhost/some#access_token=at123&refresh_token=rt456';
+      window.history.pushState({}, '', href);
+
+      await act(async () => {
+        render(
+          <AuthProvider>
+            <TestComponent />
+          </AuthProvider>
+        );
+      });
+
+      await waitFor(() => {
+        expect(setSessionMock).toHaveBeenCalledWith({ access_token: 'at123', refresh_token: 'rt456' });
+        expect(replaceSpy).toHaveBeenCalled();
+      });
     });
   });
 

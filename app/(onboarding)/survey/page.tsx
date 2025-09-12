@@ -49,7 +49,7 @@ export default function SurveyPage() {
     <ProtectedRoute requireAuth requireOnboarding>
       <OnboardingProgress currentStep={1} />
       <div className="mt-4 bg-white rounded-lg shadow-md p-6">
-        <IntakeSurvey onNext={handleSurveyComplete} />
+        <IntakeSurvey onNext={handleSurveyComplete} submitting={loading} />
       </div>
     </ProtectedRoute>
   );

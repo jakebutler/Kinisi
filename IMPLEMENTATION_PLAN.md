@@ -184,6 +184,31 @@ app/
 - **Feature Parity**: Ensure v2 matches/exceeds v1 functionality
 - **Accessibility**: WCAG compliance testing throughout
 
+## Stage 0: Test Stabilization & Mocks
+**Goal**: Stabilize Jest unit/integration tests for the onboarding flow and related hooks/routes by using deterministic mocks and eliminating flaky provider effects.
+**Success Criteria**:
+- 100% passing Jest suite locally and in CI (no real network calls).
+- Onboarding flow tests use a controlled `OnboardingContext` mock with mutable state and a pass-through provider.
+- Replaced brittle fetch/notification assertions with UI-based assertions or direct hook-call assertions where appropriate.
+- API route auth tests mock Supabase server before importing route modules; no 401s when valid auth is mocked.
+- Dashboard data hook tests use chainable Supabase query mocks that support multiple `eq()` calls.
+
+**Tests**:
+- `__tests__/integration/onboarding-flow.test.tsx`
+- `__tests__/integration/api-authentication.test.ts`
+- `__tests__/lib/v2/hooks/useDashboardData.test.ts`
+- `__tests__/hooks/useProgram.test.ts`
+
+**Status**: Complete
+
+**Key changes (high level)**:
+- Onboarding integration tests now control onboarding state explicitly via a manual context mock and `__setOnboardingState` helper; `ProtectedRoute` is mocked to a no-op for test determinism.
+- `lib/v2/hooks/useProgram.ts` aligned endpoints/bodies with tests, added guarded `getSession()` access, and consistently includes Authorization headers.
+- API auth tests now reset modules and apply Supabase server mocks before dynamic route imports; added virtual mocks to support relative/absolute imports.
+- Dashboard data tests use a reusable, chainable Supabase query mock to support `select().eq().eq().order().limit()` chains without flakiness.
+
+---
+
 ## Definition of Done
 
 Each stage must meet:

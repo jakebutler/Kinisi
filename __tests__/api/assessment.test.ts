@@ -18,40 +18,56 @@ describe('/api/assessment', () => {
 
   beforeEach(() => {
     jest.clearAllMocks();
-    
+
     mockSupabase = {
       auth: {
         getUser: jest.fn()
       },
-      from: jest.fn(() => ({
-        select: jest.fn(() => ({
-          eq: jest.fn(() => ({
-            order: jest.fn(() => ({
-              limit: jest.fn(() => Promise.resolve({
-                data: [{ id: 'survey-1' }],
-                error: null
+      from: jest.fn((table: string) => {
+        if (table === 'survey_responses') {
+          return {
+            insert: jest.fn(() => ({
+              select: jest.fn(() => ({
+                single: jest.fn(() => Promise.resolve({
+                  data: { id: 'survey-1' },
+                  error: null,
+                }))
               }))
             }))
-          }))
-        })),
-        insert: jest.fn(() => ({
-          select: jest.fn(() => ({
-            single: jest.fn(() => Promise.resolve({
-              data: {
-                id: 'assessment-1',
-                user_id: 'user-1',
-                survey_response_id: 'survey-1',
-                assessment: 'Generated assessment',
-                approved: false,
-                created_at: new Date().toISOString()
-              },
-              error: null
+          };
+        }
+        if (table === 'assessments') {
+          return {
+            insert: jest.fn(() => ({
+              select: jest.fn(() => ({
+                single: jest.fn(() => Promise.resolve({
+                  data: {
+                    id: 'assessment-1',
+                    user_id: 'user-1',
+                    survey_response_id: 'survey-1',
+                    assessment: 'Generated assessment',
+                    approved: false,
+                    created_at: new Date().toISOString(),
+                  },
+                  error: null,
+                }))
+              }))
             }))
-          }))
-        }))
-      }))
+          };
+        }
+        // Fallback chain, unlikely used after route change
+        return {
+          select: jest.fn(() => ({
+            eq: jest.fn(() => ({
+              order: jest.fn(() => ({
+                limit: jest.fn(() => Promise.resolve({ data: [{ id: 'survey-1' }], error: null }))
+              }))
+            }))
+          })),
+        } as any;
+      })
     };
-    
+
     mockCreateSupabaseServerClient.mockResolvedValue(mockSupabase);
   });
 
@@ -154,41 +170,44 @@ describe('/api/assessment', () => {
     expect(data.error).toBe('Failed to generate assessment');
   });
 
-  it('should return 404 when no survey response found', async () => {
+  it('should return 500 when storing survey response fails', async () => {
     const mockUser = { id: 'user-1', email: 'test@example.com' };
     mockSupabase.auth.getUser.mockResolvedValue({
       data: { user: mockUser },
       error: null
     });
     mockGenerateAssessment.mockResolvedValue('Generated assessment');
-    
-    // Mock empty survey response
-    mockSupabase.from.mockReturnValue({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          order: jest.fn(() => ({
-            limit: jest.fn(() => Promise.resolve({
-              data: [],
-              error: null
+
+    // Force survey_responses insert failure
+    mockSupabase.from.mockImplementation((table: string) => {
+      if (table === 'survey_responses') {
+        return {
+          insert: jest.fn(() => ({
+            select: jest.fn(() => ({
+              single: jest.fn(() => Promise.resolve({ data: null, error: { message: 'insert failed' } }))
             }))
           }))
+        } as any;
+      }
+      // Should not reach assessments insert
+      return {
+        insert: jest.fn(() => ({
+          select: jest.fn(() => ({ single: jest.fn(() => Promise.resolve({ data: null, error: null })) }))
         }))
-      }))
+      } as any;
     });
 
     const request = new NextRequest('http://localhost:3000/api/assessment', {
       method: 'POST',
-      headers: {
-        'Authorization': 'Bearer test-token'
-      },
+      headers: { 'Authorization': 'Bearer test-token' },
       body: JSON.stringify({ surveyResponses: { goal: 'fitness' } })
     });
 
     const response = await POST(request);
     const data = await response.json();
 
-    expect(response.status).toBe(404);
-    expect(data.error).toBe('Could not find survey response for user');
+    expect(response.status).toBe(500);
+    expect(data.error).toBe('Failed to store survey response');
   });
 
   it('should successfully generate and store assessment', async () => {

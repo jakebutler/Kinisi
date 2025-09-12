@@ -1,6 +1,5 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
-import { BrowserRouter } from 'react-router-dom';
 
 // Import all layouts that use context hooks
 import OnboardingLayout from '../../app/(onboarding)/layout';
@@ -14,8 +13,9 @@ jest.mock('next/navigation', () => ({
   useRouter: () => ({
     push: jest.fn(),
     replace: jest.fn(),
-    pathname: '/test'
-  })
+  }),
+  usePathname: () => '/test',
+  useSearchParams: () => ({ get: () => null }),
 }));
 
 // Mock Supabase client

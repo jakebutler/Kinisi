@@ -99,8 +99,33 @@ function RegisterPage() {
             required
           />
         </label>
-        {error && <div className="mb-2 text-red-600">{error}</div>}
-        {success && <div className="mb-2 text-green-700">{success}</div>}
+        {error && (
+          <div className="mb-3 rounded-md border border-red-200 bg-red-50 p-3 text-sm text-red-800">
+            <p className="font-medium mb-1">We couldn't complete your registration.</p>
+            <p>{error}</p>
+            {error.toLowerCase().includes('email service not configured') && (
+              <div className="mt-2 text-red-700">
+                <p className="font-medium">Developer hint:</p>
+                <ul className="list-disc ml-5 mt-1">
+                  <li>Set <code>RESEND_API_KEY</code> and <code>EMAIL_FROM</code> in your environment.</li>
+                  <li>In production, ensure the email provider domain is verified.</li>
+                </ul>
+              </div>
+            )}
+            {error.toLowerCase().includes('too many requests') && (
+              <p className="mt-2">Please wait a minute and try again.</p>
+            )}
+            {error.toLowerCase().includes('invalid access code') && (
+              <p className="mt-2">If you don't have an access code, please contact support.</p>
+            )}
+          </div>
+        )}
+        {success && (
+          <div className="mb-3 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+            <p className="font-medium mb-1">{success}</p>
+            <p>If you don’t see the email, check your spam folder. Keep this tab open; you’ll be redirected and signed in after confirmation.</p>
+          </div>
+        )}
         <button
           type="submit"
           className="w-full btn-primary disabled:opacity-50"

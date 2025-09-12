@@ -29,7 +29,7 @@ const PersonalizedAssessment: React.FC<PersonalizedAssessmentProps> = ({
   onNext,
   onBack
 }) => {
-  const [status, setStatus] = useState<'draft' | 'approved'>('draft');
+  const [status, setStatus] = useState<'draft' | 'approved'>(assessment?.approved ? 'approved' : 'draft');
   const [isRequestingUpdates, setIsRequestingUpdates] = useState(false);
   const [updateRequest, setUpdateRequest] = useState('');
   const [showProgramUpdateOptions, setShowProgramUpdateOptions] = useState(false);
@@ -76,11 +76,15 @@ const PersonalizedAssessment: React.FC<PersonalizedAssessmentProps> = ({
     // TODO: Integrate with backend API based on choice
   };
 
+  const assessmentText = (assessment as any)?.content || (assessment as any)?.assessment || '';
+
   return (
     <div>
-      <h2 className="text-2xl font-bold text-gray-800 mb-6">
-        {status === 'draft' ? 'Your Personalized Assessment (Draft)' : 'Your Personalized Assessment'}
-      </h2>
+      <h2 className="text-2xl font-bold text-gray-800 mb-6">Your Personalized Assessment</h2>
+
+      {status === 'approved' && (
+        <div className="mb-4 text-green-700">✓ Assessment Approved</div>
+      )}
 
       <div className="bg-white border border-gray-200 rounded-lg p-6 mb-6">
         <h3 className="text-lg font-medium text-gray-800 mb-4">
@@ -90,11 +94,10 @@ const PersonalizedAssessment: React.FC<PersonalizedAssessmentProps> = ({
           <div>
             <h4 className="font-medium text-gray-700">Current Fitness Level</h4>
             <p className="text-gray-600">
-              {assessment?.assessment || 
+              {assessmentText ||
                 `Based on your responses, you're at a beginner to intermediate
                 level. You have some experience with Bodyweight exercises and Running,
-                but would benefit from a structured program to build consistency.`
-              }
+                but would benefit from a structured program to build consistency.`}
             </p>
           </div>
           <div>
@@ -132,12 +135,15 @@ const PersonalizedAssessment: React.FC<PersonalizedAssessmentProps> = ({
 
       {isRequestingUpdates && (
         <div className="mb-6">
+          <h3 className="text-lg font-medium text-gray-800 mb-2">
+            What would you like to change about your assessment?
+          </h3>
           <textarea
             value={updateRequest}
             onChange={e => setUpdateRequest(e.target.value)}
             className="w-full p-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
             rows={4}
-            placeholder="Type your request here"
+            placeholder="Please describe what you'd like to change..."
           />
         </div>
       )}
@@ -176,14 +182,7 @@ const PersonalizedAssessment: React.FC<PersonalizedAssessmentProps> = ({
         )}
         {!onBack && <div />}
         <div className="flex gap-3">
-          {status === 'approved' && !isRequestingUpdates && !showProgramUpdateOptions ? (
-            <div className="flex items-center">
-              <span className="italic text-gray-500 mr-4">Approved</span>
-              <Button variant="outline" onClick={handleRequestUpdates}>
-                Request Updates
-              </Button>
-            </div>
-          ) : isRequestingUpdates ? (
+          {status === 'approved' && !isRequestingUpdates && !showProgramUpdateOptions ? null : isRequestingUpdates ? (
             <>
               <Button variant="outline" onClick={handleCancelRequest}>
                 Cancel
@@ -194,11 +193,11 @@ const PersonalizedAssessment: React.FC<PersonalizedAssessmentProps> = ({
             </>
           ) : !showProgramUpdateOptions ? (
             <>
-              <Button variant="outline" onClick={handleRequestUpdates}>
+              <Button variant="outline" onClick={handleRequestUpdates} disabled={loading}>
                 Request Updates
               </Button>
               <Button onClick={handleApprove} disabled={loading}>
-                {loading ? 'Processing...' : 'Approve'}
+                Approve Assessment
               </Button>
             </>
           ) : null}

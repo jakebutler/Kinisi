@@ -11,7 +11,7 @@ import { useUI } from '@/lib/v2/contexts/UIContext';
 import LoadingSpinner from '@/components/v2/ui/LoadingSpinner';
 import EmptyState from '@/components/v2/ui/EmptyState';
 import ErrorDisplay from '@/components/v2/ui/ErrorDisplay';
-import ProtectedRoute from '@/components/v2/ui/ProtectedRoute';
+import ProtectedRoute from '@/lib/v2/components/ProtectedRoute';
 import ExerciseProgram from '@/components/v2/onboarding/ExerciseProgram';
 import PersonalizedAssessment from '@/components/v2/onboarding/PersonalizedAssessment';
 import { Calendar, Activity, ClipboardList } from 'lucide-react';
@@ -72,11 +72,11 @@ export default function DashboardPage() {
                 <strong>Program ID:</strong> {program.id}
               </p>
               <p className="text-gray-700">
-                <strong>Created:</strong> {new Date(program.created_at).toLocaleDateString()}
+                <strong>Created:</strong> {new Date(program.created_at).toLocaleDateString(undefined, { timeZone: 'UTC' })}
               </p>
               {program.last_scheduled_at && (
                 <p className="text-gray-700">
-                  <strong>Last Scheduled:</strong> {new Date(program.last_scheduled_at).toLocaleDateString()}
+                  <strong>Last Scheduled:</strong> {new Date(program.last_scheduled_at).toLocaleDateString(undefined, { timeZone: 'UTC' })}
                 </p>
               )}
             </div>
@@ -134,7 +134,7 @@ export default function DashboardPage() {
             </div>
             <div className="space-y-4">
               <p className="text-gray-700">
-                <strong>Last Updated:</strong> {new Date(surveyData.created_at).toLocaleDateString()}
+                <strong>Last Updated:</strong> {new Date(surveyData.created_at).toLocaleDateString(undefined, { timeZone: 'UTC' })}
               </p>
               <div className="bg-white rounded-lg p-4 border">
                 <h4 className="font-medium text-gray-800 mb-2">Survey Data:</h4>

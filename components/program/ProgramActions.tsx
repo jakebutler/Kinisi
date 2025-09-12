@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/utils/supabaseClient";
 
 export default function ProgramActions({ programId, status }: { programId: string; status?: string }) {
   const router = useRouter();
@@ -23,9 +24,15 @@ export default function ProgramActions({ programId, status }: { programId: strin
   }, []);
 
   async function postJson(url: string, body: any, method: string = "POST") {
+    const sessRes = await supabase.auth.getSession?.();
+    const accessToken = sessRes?.data?.session?.access_token;
     const res = await fetch(url, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      credentials: "include",
       body: JSON.stringify(body ?? {})
     });
     const data = await res.json().catch(() => ({}));

@@ -35,22 +35,29 @@ const Navigation: React.FC<NavigationProps> = ({
         const isActive = activeTab === tab.id;
         
         return (
-          <div 
-            key={tab.id} 
+          <div
+            key={tab.id}
             className={`bg-white rounded-lg shadow-md p-3 flex-1 text-center hover:shadow-lg transition-all duration-200 cursor-pointer ${
               isActive ? 'ring-2 ring-[var(--brand-puce)] shadow-lg' : ''
             }`}
             onClick={() => onTabChange(tab.id)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onTabChange(tab.id);
+              }
+            }}
+            tabIndex={0}
           >
-            <div className="w-full h-full flex flex-col justify-center items-center text-sm font-medium text-gray-700 hover:text-[var(--brand-puce)] transition-colors">
-              <Icon 
-                size={18} 
-                className={isActive ? 'text-[var(--brand-puce)]' : ''} 
-              />
-              <span className={`mt-1 ${isActive ? 'text-[var(--brand-puce)]' : ''}`}>
-                {tab.label}
-              </span>
-            </div>
+            <Icon
+              size={18}
+              className={isActive ? 'text-[var(--brand-puce)]' : ''}
+              role="img"
+              aria-hidden="true"
+            />
+            <span className={`mt-1 inline-block text-sm font-medium text-gray-700 ${isActive ? 'text-[var(--brand-puce)]' : ''}`}>
+              {tab.label}
+            </span>
           </div>
         );
       })}

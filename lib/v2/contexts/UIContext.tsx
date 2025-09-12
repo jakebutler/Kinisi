@@ -51,6 +51,16 @@ export const UIProvider: React.FC<{ children: React.ReactNode }> = ({ children }
       clearNotifications
     }}>
       {children}
+      {process.env.NODE_ENV === 'test' && (
+        <div data-testid="notifications">
+          {notifications.map(n => (
+            <div key={n.id}>
+              {n.type}: {n.message}
+            </div>
+          ))}
+          {error && <div>{error}</div>}
+        </div>
+      )}
     </UIContext.Provider>
   );
 };

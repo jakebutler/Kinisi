@@ -18,6 +18,23 @@ describe('API Authentication Integration', () => {
   describe('Routes should return 401 without auth headers', () => {
     API_ROUTES.forEach(({ path, method, body }) => {
       it(`${method} ${path} should return 401 without Authorization header`, async () => {
+        // Prepare mocks BEFORE importing route
+        jest.resetModules();
+        jest.doMock('@/utils/supabaseServer', () => ({
+          createSupabaseServerClient: () => Promise.resolve({
+            auth: {
+              getUser: () => Promise.resolve({ data: { user: null }, error: { message: 'No session' } })
+            }
+          })
+        }));
+        jest.doMock('../../../../utils/supabaseServer', () => ({
+          createSupabaseServerClient: () => Promise.resolve({
+            auth: {
+              getUser: () => Promise.resolve({ data: { user: null }, error: { message: 'No session' } })
+            }
+          })
+        }), { virtual: true });
+
         // Mock the route handler
         let routeHandler;
         try {
@@ -42,8 +59,15 @@ describe('API Authentication Integration', () => {
           body: JSON.stringify(body)
         });
 
-        // Mock Supabase to return no user
-        jest.doMock('../../utils/supabaseServer', () => ({
+        // Mock Supabase to return no user (support both absolute and relative imports used by routes)
+        jest.doMock('@/utils/supabaseServer', () => ({
+          createSupabaseServerClient: () => Promise.resolve({
+            auth: {
+              getUser: () => Promise.resolve({ data: { user: null }, error: { message: 'No session' } })
+            }
+          })
+        }));
+        jest.doMock('../../../../utils/supabaseServer', () => ({
           createSupabaseServerClient: () => Promise.resolve({
             auth: {
               getUser: () => Promise.resolve({ data: { user: null }, error: { message: 'No session' } })
@@ -64,6 +88,63 @@ describe('API Authentication Integration', () => {
   describe('Routes should accept valid auth headers', () => {
     API_ROUTES.forEach(({ path, method, body }) => {
       it(`${method} ${path} should accept Authorization header`, async () => {
+        // Prepare mocks BEFORE importing route
+        jest.resetModules();
+        jest.doMock('@/utils/supabaseServer', () => ({
+          createSupabaseServerClient: () => Promise.resolve({
+            auth: {
+              // Always return a valid user to verify that routes don't 401 with auth
+              getUser: () => Promise.resolve({ 
+                data: { user: { id: 'user-1', email: 'test@example.com' } }, 
+                error: null 
+              })
+            },
+            from: () => ({
+              select: () => ({
+                eq: () => ({
+                  order: () => ({
+                    limit: () => Promise.resolve({ data: [{ id: 'test' }], error: null })
+                  })
+                })
+              }),
+              insert: () => ({
+                select: () => ({
+                  single: () => Promise.resolve({ data: { id: 'test' }, error: null })
+                })
+              })
+            })
+          })
+        }));
+        jest.doMock('../../../../utils/supabaseServer', () => ({
+          createSupabaseServerClient: () => Promise.resolve({
+            auth: {
+              getUser: () => Promise.resolve({ 
+                data: { user: { id: 'user-1', email: 'test@example.com' } }, 
+                error: null 
+              })
+            },
+            from: () => ({
+              select: () => ({
+                eq: () => ({
+                  order: () => ({
+                    limit: () => Promise.resolve({ data: [{ id: 'test' }], error: null })
+                  })
+                })
+              }),
+              insert: () => ({
+                select: () => ({
+                  single: () => Promise.resolve({ data: { id: 'test' }, error: null })
+                })
+              })
+            })
+          })
+        }), { virtual: true });
+
+        // Mock other dependencies that might be needed
+        jest.doMock('../../utils/assessmentChain', () => ({
+          generateAssessmentFromSurvey: () => Promise.resolve('Test assessment')
+        }));
+
         // Mock the route handler
         let routeHandler;
         try {
@@ -88,8 +169,8 @@ describe('API Authentication Integration', () => {
           body: JSON.stringify(body)
         });
 
-        // Mock Supabase to return valid user
-        jest.doMock('../../utils/supabaseServer', () => ({
+        // Mock Supabase to return valid user (support both absolute and relative route imports)
+        const supabaseServerMock = {
           createSupabaseServerClient: () => Promise.resolve({
             auth: {
               getUser: (token?: string) => {
@@ -117,7 +198,9 @@ describe('API Authentication Integration', () => {
               })
             })
           })
-        }));
+        };
+        jest.doMock('@/utils/supabaseServer', () => supabaseServerMock);
+        jest.doMock('../../../../utils/supabaseServer', () => supabaseServerMock);
 
         // Mock other dependencies that might be needed
         jest.doMock('../../utils/assessmentChain', () => ({
@@ -137,7 +220,7 @@ describe('API Authentication Integration', () => {
           }
         } catch (error) {
           // Some routes might fail due to missing dependencies, but not auth
-          expect(error).not.toMatch(/unauthorized|auth/i);
+          expect(String(error)).not.toMatch(/unauthorized|auth/i);
         }
       });
     });

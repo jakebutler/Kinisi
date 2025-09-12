@@ -4,15 +4,16 @@ import { useAssessment } from '../../../../lib/v2/hooks/useAssessment';
 // Mock fetch
 global.fetch = jest.fn();
 
-// Mock Supabase client
-const mockGetSession = jest.fn();
+// Mock Supabase client (avoid hoist issues by defining jest.fn inside factory)
 jest.mock('@/utils/supabaseClient', () => ({
   supabase: {
     auth: {
-      getSession: mockGetSession
-    }
-  }
+      getSession: jest.fn(),
+    },
+  },
 }));
+import { supabase } from '@/utils/supabaseClient';
+const mockGetSession = supabase.auth.getSession as unknown as jest.Mock;
 
 describe('useAssessment', () => {
   beforeEach(() => {

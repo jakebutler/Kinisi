@@ -1,5 +1,14 @@
 import { renderHook, act } from '@testing-library/react';
 import { useAssessment } from '@/lib/v2/hooks/useAssessment';
+import { supabase } from '@/utils/supabaseClient';
+
+jest.mock('@/utils/supabaseClient', () => ({
+  supabase: {
+    auth: {
+      getSession: jest.fn(() => Promise.resolve({ data: { session: null }, error: null })),
+    }
+  }
+}));
 
 // Mock fetch globally
 const mockFetch = jest.fn();
@@ -8,6 +17,8 @@ global.fetch = mockFetch;
 describe('useAssessment', () => {
   beforeEach(() => {
     mockFetch.mockClear();
+    // Reset getSession default
+    (supabase.auth.getSession as unknown as jest.Mock).mockResolvedValue({ data: { session: null }, error: null });
   });
 
   describe('generateAssessment', () => {
@@ -32,9 +43,9 @@ describe('useAssessment', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('/api/assessment', {
         method: 'POST',
-        headers: {
+        headers: expect.objectContaining({
           'Content-Type': 'application/json',
-        },
+        }),
         body: JSON.stringify({ surveyResponses: { test: 'data' } }),
       });
 
@@ -105,9 +116,9 @@ describe('useAssessment', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('/api/assessment/approve', {
         method: 'POST',
-        headers: {
+        headers: expect.objectContaining({
           'Content-Type': 'application/json',
-        },
+        }),
         body: JSON.stringify({ assessmentId: 'test-id' }),
       });
 
@@ -157,9 +168,9 @@ describe('useAssessment', () => {
 
       expect(mockFetch).toHaveBeenCalledWith('/api/assessment/feedback', {
         method: 'POST',
-        headers: {
+        headers: expect.objectContaining({
           'Content-Type': 'application/json',
-        },
+        }),
         body: JSON.stringify({ assessmentId: 'test-id', feedback: 'Please update' }),
       });
 
