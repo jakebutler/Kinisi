@@ -138,7 +138,7 @@ describe('userFlow utilities', () => {
 
   describe('getPostLoginRedirect', () => {
     describe('when user has completed survey', () => {
-      it('should return dashboard path', async () => {
+      it('should return survey path (assessment/program/schedule not completed yet)', async () => {
         mockGetSurveyResponse.mockResolvedValue({
           data: [mockSurveyResponse],
           error: null
@@ -146,7 +146,7 @@ describe('userFlow utilities', () => {
 
         const result = await getPostLoginRedirect('test-user-id-123');
         
-        expect(result).toBe('/dashboard');
+        expect(result).toBe('/survey');
       });
     });
 

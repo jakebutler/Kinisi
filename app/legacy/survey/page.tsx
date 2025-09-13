@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-import { upsertSurveyResponse, getSurveyResponse } from '../../utils/surveyResponses';
-import { supabase } from '../../utils/supabaseClient';
+import { upsertSurveyResponse, getSurveyResponse } from '@/utils/surveyResponses';
+import { supabase } from '@/utils/supabaseClient';
 import { useRouter } from 'next/navigation';
 
 type Question = {
@@ -226,6 +226,43 @@ const SurveyPage = () => {
   const [visibleQuestions, setVisibleQuestions] = useState<Question[]>([]);
   const router = useRouter();
   
+  const isQuestionAnswered = (q: Question): boolean => {
+    const getVal = (key: string) => formData[key as keyof typeof formData];
+    const val = getVal(q.key);
+
+    const nonEmptyString = (v: unknown) => typeof v === 'string' && v.trim().length > 0;
+    const validNumber = (v: unknown) => typeof v === 'number' && !Number.isNaN(v);
+    const nonEmptyArray = (v: unknown) => Array.isArray(v) && v.length > 0;
+
+    switch (q.type) {
+      case 'text':
+        return nonEmptyString(val);
+      case 'radio':
+      case 'select':
+        return typeof val === 'string' && val !== '';
+      case 'multiselect':
+        return nonEmptyArray(val);
+      case 'number':
+        return validNumber(val);
+      case 'group': {
+        const group = formData[q.key];
+        if (!group || typeof group !== 'object' || Array.isArray(group)) return false;
+        const obj = group as Record<string, unknown>;
+        return (q.fields || []).every(f => {
+          if (!f.required) return true;
+          const fv = obj[f.key];
+          if (f.type === 'text') return nonEmptyString(fv);
+          if (f.type === 'number') return validNumber(fv);
+          if (f.type === 'multiselect') return nonEmptyArray(fv);
+          if (f.type === 'radio' || f.type === 'select') return typeof fv === 'string' && fv !== '';
+          return !!fv;
+        });
+      }
+      default:
+        return !!val;
+    }
+  };
+  
   // Filter out follow-up questions that aren't needed
   useEffect(() => {
     const filteredQuestions: Question[] = [];
@@ -361,90 +398,172 @@ const SurveyPage = () => {
       );
     }
     
+    const isZeroToTenScale = (q: Question) => {
+      const t = q.title || '';
+      return /0\s*[–-]\s*10/.test(t) || (typeof q.min === 'number' && typeof q.max === 'number' && q.min === 0 && q.max === 10);
+    };
+
     switch (question.type) {
       case 'radio':
         return (
-          <div className="space-y-2">
-            {question.options?.map(option => (
-              <label key={option.value} className="flex items-center space-x-2">
-                <input
-                  type="radio"
-                  name={question.key}
-                  value={option.value}
-                  checked={value === option.value}
-                  onChange={() => handleChangeFn(option.value)}
-                  className="h-4 w-4 accent-[var(--brand-puce)]"
-                  required={question.required}
-                />
-                <span>{option.label}</span>
-              </label>
-            ))}
+          <div role="radiogroup" className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {question.options?.map(option => {
+              const selected = value === option.value;
+              return (
+                <button
+                  type="button"
+                  key={option.value}
+                  role="radio"
+                  aria-checked={selected}
+                  onClick={() => handleChangeFn(option.value)}
+                  className={`w-full text-left rounded-lg border px-4 py-3 transition ${selected ? 'border-[var(--brand-puce)] ring-2 ring-[var(--brand-puce)] bg-[var(--brand-puce)]/10' : 'border-gray-300 hover:border-gray-400'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`inline-block h-4 w-4 rounded-full border ${selected ? 'bg-[var(--brand-puce)] border-[var(--brand-puce)]' : 'border-gray-400'}`} />
+                    <span className="font-medium">{option.label}</span>
+                  </div>
+                </button>
+              );
+            })}
           </div>
         );
       
       case 'select':
         return (
-          <select
-            value={typeof value === 'string' || typeof value === 'number' ? value : ''}
-            onChange={(e) => handleChangeFn(e.target.value)}
-            className="w-full p-2 border rounded"
-            required={question.required}
-          >
-            <option value="">Select an option</option>
-            {question.options?.map(option => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
+          <div role="listbox" aria-label={question.title} className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            {question.options?.map(option => {
+              const selected = value === option.value;
+              return (
+                <button
+                  type="button"
+                  key={option.value}
+                  role="option"
+                  aria-selected={selected}
+                  onClick={() => handleChangeFn(option.value)}
+                  className={`w-full text-left rounded-lg border px-4 py-3 transition ${selected ? 'border-[var(--brand-puce)] ring-2 ring-[var(--brand-puce)] bg-[var(--brand-puce)]/10' : 'border-gray-300 hover:border-gray-400'}`}
+                >
+                  <div className="flex items-center gap-3">
+                    <span className={`inline-block h-4 w-4 rounded-full border ${selected ? 'bg-[var(--brand-puce)] border-[var(--brand-puce)]' : 'border-gray-400'}`} />
+                    <span className="font-medium">{option.label}</span>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
         );
       
       case 'multiselect':
-        const selectedValues = Array.isArray(value) ? value : [];
+        const selectedValues = Array.isArray(value) ? (value as string[]) : [];
         return (
-          <div className="space-y-2">
-            {question.options?.map(option => (
-              <label key={option.value} className="flex items-center space-x-2">
-                <input
-                  type="checkbox"
-                  checked={selectedValues.includes(option.value)}
-                  onChange={(e) => {
-                    const newValue = e.target.checked
-                      ? [...selectedValues, option.value]
-                      : selectedValues.filter(v => v !== option.value);
+          <div className="flex flex-wrap gap-2">
+            {question.options?.map(option => {
+              const selected = selectedValues.includes(option.value);
+              return (
+                <button
+                  type="button"
+                  key={option.value}
+                  aria-pressed={selected}
+                  onClick={() => {
+                    const newValue = selected
+                      ? selectedValues.filter(v => v !== option.value)
+                      : [...selectedValues, option.value];
                     handleChangeFn(newValue);
                   }}
-                  className="h-4 w-4 accent-[var(--brand-puce)]"
-                />
-                <span>{option.label}</span>
-              </label>
-            ))}
+                  className={`px-3 py-1.5 rounded-full border text-sm transition ${selected ? 'bg-[var(--brand-puce)] text-white border-[var(--brand-puce)]' : 'bg-white text-gray-800 border-gray-300 hover:border-gray-400'}`}
+                >
+                  {option.label}
+                </button>
+              );
+            })}
           </div>
         );
       
       case 'number':
-        return (
-          <input
-            type="number"
-            value={typeof value === 'number' ? value : value === '' ? '' : Number(value) || ''}
-            onChange={(e) => handleChangeFn(Number(e.target.value))}
-            className="w-full p-2 border rounded"
-            min={question.min}
-            max={question.max}
-            required={question.required}
-          />
-        );
+        {
+          const numVal = typeof value === 'number' ? value : (value === '' ? '' : Number(value));
+          if (isZeroToTenScale(question)) {
+          const v = typeof numVal === 'number' && !isNaN(numVal) ? numVal : 0;
+          return (
+            <div>
+              <div className="mb-2 text-sm text-gray-600 flex items-center gap-2">
+                <span className="text-gray-500">Selected:</span>
+                <span className="font-semibold text-gray-900" data-testid="scale-selected-value">{v}</span>
+              </div>
+              <div className="grid grid-cols-11 gap-1 sm:gap-2" role="group" aria-label="0 to 10 scale" data-testid="scale-0-10">
+                {Array.from({ length: 11 }).map((_, i) => {
+                  const selected = v === i;
+                  return (
+                    <button
+                      key={i}
+                      type="button"
+                      role="button"
+                      aria-pressed={selected}
+                      onClick={() => handleChangeFn(i)}
+                      className={`h-10 sm:h-12 rounded-md border text-sm font-medium transition ${selected
+                        ? 'bg-[var(--brand-puce)] text-white border-[var(--brand-puce)]'
+                        : 'bg-white text-gray-800 border-gray-300 hover:border-gray-400'}`}
+                      data-testid={`scale-box-${i}`}
+                    >
+                      {i}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+  
+          const v = typeof numVal === 'number' && !isNaN(numVal) ? numVal : (question.min ?? 0);
+          const decrement = () => handleChangeFn(Math.max((question.min ?? Number.NEGATIVE_INFINITY), v - 1));
+          const increment = () => handleChangeFn(Math.min((question.max ?? Number.POSITIVE_INFINITY), v + 1));
+          return (
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={decrement}
+                className="h-10 w-10 rounded-lg border border-gray-300 hover:border-gray-400"
+                aria-label="Decrease"
+              >
+                −
+              </button>
+              <input
+                type="number"
+                value={v}
+                onChange={(e) => handleChangeFn(Number(e.target.value))}
+                className="w-24 p-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-puce)]"
+                min={question.min}
+                max={question.max}
+                required={question.required}
+              />
+              <button
+                type="button"
+                onClick={increment}
+                className="h-10 w-10 rounded-lg border border-gray-300 hover:border-gray-400"
+                aria-label="Increase"
+              >
+                +
+              </button>
+            </div>
+          );
+        }
       
       case 'text':
-        return (
-          <textarea
-            value={typeof value === 'string' ? value : ''}
-            onChange={(e) => handleChangeFn(e.target.value)}
-            className="w-full p-2 border rounded"
-            rows={3}
-            required={question.required}
-          />
-        );
+        {
+          const str = typeof value === 'string' ? value : '';
+          const count = str.length;
+          return (
+            <div>
+              <textarea
+                value={str}
+                onChange={(e) => handleChangeFn(e.target.value)}
+                className="w-full p-3 border rounded-lg focus:outline-none focus:ring-2 focus:ring-[var(--brand-puce)]"
+                rows={4}
+                required={question.required}
+              />
+              <div className="mt-1 text-xs text-gray-500">{count} characters</div>
+            </div>
+          );
+        }
       
       default:
         return null;
@@ -467,7 +586,7 @@ const SurveyPage = () => {
         <div className="w-full progress-outer rounded-full h-2.5">
           <div 
             className="progress-inner h-2.5 rounded-full" 
-            style={{ width: `${((currentQuestionIndex + 1) / questions.length) * 100}%` }}
+            style={{ width: `${visibleQuestions.length ? ((currentQuestionIndex + 1) / visibleQuestions.length) * 100 : 0}%` }}
           ></div>
         </div>
         <p className="text-sm text-gray-600 mt-1">
@@ -505,8 +624,8 @@ const SurveyPage = () => {
             <button
               type="button"
               onClick={handleNext}
-              className={`btn-gradient text-white px-6 py-2 rounded ${(!formData[currentQuestion.key] && currentQuestion.required) ? 'opacity-50 cursor-not-allowed' : ''}`}
-              disabled={!formData[currentQuestion.key] && currentQuestion.required}
+              className={`btn-primary ${(currentQuestion.required && !isQuestionAnswered(currentQuestion)) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={currentQuestion.required && !isQuestionAnswered(currentQuestion)}
             >
               Next
             </button>
@@ -514,8 +633,8 @@ const SurveyPage = () => {
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting || (currentQuestion.required && !formData[currentQuestion.key])}
-              className={`btn-gradient text-white px-6 py-2 rounded ${(submitting || (currentQuestion.required && !formData[currentQuestion.key])) ? 'opacity-50 cursor-not-allowed' : ''}`}
+              disabled={submitting || (currentQuestion.required && !isQuestionAnswered(currentQuestion))}
+              className={`btn-primary ${(submitting || (currentQuestion.required && !isQuestionAnswered(currentQuestion))) ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {submitting ? 'Submitting...' : 'Submit Survey'}
             </button>

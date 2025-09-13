@@ -4,6 +4,7 @@ import { getProgramById, getExerciseNamesByIds } from "@/utils/programDataHelper
 import ProgramActions from "@/components/program/ProgramActions";
 import { createSupabaseServerClient } from "@/utils/supabaseServer";
 import { redirect } from "next/navigation";
+import StartDateControl from "@/components/program/StartDateControl";
 
 // Program details page: renders from program_json since relational sessions may not be populated yet
 export default async function ProgramDetailsPage({ params }: { params: Promise<{ id: string }> }) {
@@ -67,6 +68,7 @@ export default async function ProgramDetailsPage({ params }: { params: Promise<{
         <span className="mr-2">Status: <span className="font-medium">{program.status}</span></span>
         {program.start_date ? <span className="ml-2">Start: <span className="font-medium">{program.start_date}</span></span> : null}
       </div>
+      <StartDateControl programId={program.id} initialDate={program.start_date || ""} />
       <div className="text-gray-700 mb-6">{weeks.length} weeks, {totalSessions} sessions</div>
 
       <ProgramActions programId={program.id} status={program.status} />

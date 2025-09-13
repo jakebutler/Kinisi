@@ -3,6 +3,7 @@
 
 import { useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { supabase } from "@/utils/supabaseClient";
 
 export default function ProgramActions({ programId, status }: { programId: string; status?: string }) {
   const router = useRouter();
@@ -23,9 +24,15 @@ export default function ProgramActions({ programId, status }: { programId: strin
   }, []);
 
   async function postJson(url: string, body: any, method: string = "POST") {
+    const sessRes = await supabase.auth.getSession?.();
+    const accessToken = sessRes?.data?.session?.access_token;
     const res = await fetch(url, {
       method,
-      headers: { "Content-Type": "application/json" },
+      headers: {
+        "Content-Type": "application/json",
+        ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+      },
+      credentials: "include",
       body: JSON.stringify(body ?? {})
     });
     const data = await res.json().catch(() => ({}));
@@ -114,7 +121,7 @@ export default function ProgramActions({ programId, status }: { programId: strin
           <button
             onClick={onGenerateSchedule}
             disabled={disabled}
-            className={`px-4 py-2 rounded text-white disabled:opacity-50 ${disabled ? "bg-gray-400" : "btn-gradient"}`}
+            className="btn-primary disabled:opacity-50"
             title="Generate a schedule with start times for each session"
           >
             {loading === "schedule" ? "Scheduling..." : "Generate Schedule"}
@@ -130,14 +137,14 @@ export default function ProgramActions({ programId, status }: { programId: strin
           <button
             onClick={onSubmitFeedback}
             disabled={disabled}
-            className={`px-4 py-2 rounded text-white disabled:opacity-50 ${disabled ? "bg-gray-400" : "btn-gradient"}`}
+            className="btn-primary disabled:opacity-50"
           >
             {loading === "feedback" ? "Submitting..." : "Submit Feedback"}
           </button>
           <button
             onClick={onRevise}
             disabled={disabled}
-            className={`px-4 py-2 rounded text-white disabled:opacity-50 ${disabled ? "bg-gray-400" : "btn-gradient"}`}
+            className="btn-primary disabled:opacity-50"
           >
             {loading === "revise" ? "Revising..." : "Revise Program"}
           </button>

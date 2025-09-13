@@ -1,16 +1,24 @@
 "use client";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/utils/supabaseClient";
 import { getPostLoginRedirect } from "@/utils/userFlow";
 import Link from "next/link";
+import dynamic from "next/dynamic";
 
-export default function LoginPage() {
+function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const router = useRouter();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  if (!mounted) return null;
 
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -37,7 +45,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen items-center justify-center">
+    <div className="flex min-h-screen items-center justify-center" suppressHydrationWarning>
       <form
         className="w-full max-w-sm bg-white p-8 rounded shadow"
         onSubmit={handleLogin}
@@ -71,7 +79,7 @@ export default function LoginPage() {
         {error && <div className="mb-2 text-red-600">{error}</div>}
         <button
           type="submit"
-          className="w-full btn-gradient text-white py-2 rounded disabled:opacity-50"
+          className="w-full btn-primary disabled:opacity-50"
           disabled={loading}
         >
           {loading ? "Signing in..." : "Sign In"}
@@ -88,3 +96,5 @@ export default function LoginPage() {
     </div>
   );
 }
+
+export default dynamic(() => Promise.resolve(LoginPage), { ssr: false });

@@ -63,21 +63,6 @@ const ProgramSection: React.FC<ProgramSectionProps> = ({
   const totalSessions = Array.isArray(program?.weeks)
     ? program.weeks.reduce((sum: number, w: any) => sum + (Array.isArray(w.sessions) ? w.sessions.length : 0), 0)
     : 0;
-  // Overlay if assessment not approved
-  if (!assessmentApproved) {
-    return (
-      <div className="relative bg-white rounded-lg shadow-md p-6 mt-8 overflow-hidden">
-        <div className="absolute inset-0 bg-blue-200 bg-opacity-70 flex flex-col items-center justify-center z-10">
-          <h2 className="text-2xl font-semibold text-blue-900 mb-2">Review & Approve Your Assessment</h2>
-          <p className="text-blue-800 mb-4">Approve your personalized assessment to unlock your fitness program.</p>
-        </div>
-        <div className="opacity-40 pointer-events-none select-none">
-          <h2 className="text-2xl font-semibold mb-4">Your Fitness Program</h2>
-          <div className="h-32 bg-gray-100 rounded animate-pulse" />
-        </div>
-      </div>
-    );
-  }
 
   // Show skeleton while generating
   if (isGeneratingProgram) {
@@ -111,14 +96,18 @@ const ProgramSection: React.FC<ProgramSectionProps> = ({
       <div className="bg-white rounded-lg shadow-md p-6 mt-8">
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-2xl font-semibold">Your Fitness Program <span className="ml-2 px-2 py-1 text-xs bg-yellow-200 text-yellow-900 rounded">Draft</span></h2>
-          <button onClick={onSeeProgram} className="px-4 py-2 btn-gradient text-white rounded transition-colors">See my program</button>
+          <button onClick={onSeeProgram} className="btn-primary">See my program</button>
         </div>
-        {startDate && (
-          <div className="mb-4">
-            <label className="block text-gray-700 mb-1 font-medium">Program Start Date</label>
-            <input type="date" value={startDate} onChange={e => onStartDateChange(e.target.value)} className="border rounded px-2 py-1" />
-          </div>
-        )}
+        <div className="mb-4">
+          <label className="block text-gray-700 mb-1 font-medium">Program Start Date</label>
+          <input
+            type="date"
+            value={startDate ?? ''}
+            onChange={e => onStartDateChange(e.target.value)}
+            className="border rounded px-2 py-1"
+          />
+          <p className="text-xs text-gray-500 mt-1">Pick a start date before approving your program.</p>
+        </div>
         <div className="mb-2 text-gray-700">{program.weeks?.length || 0} weeks, {totalSessions} sessions</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {program.weeks?.slice(0, 2).map((week: any, wIdx: number) => (
@@ -140,8 +129,14 @@ const ProgramSection: React.FC<ProgramSectionProps> = ({
           ))}
         </div>
         <div className="flex mt-4 space-x-2">
-          <button onClick={onGiveFeedback} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Give Feedback</button>
-          <button onClick={onApproveProgram} className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700">Approve Program</button>
+          <button onClick={onGiveFeedback} className="btn-secondary">Give Feedback</button>
+          <button
+            onClick={onApproveProgram}
+            disabled={!startDate}
+            className={`px-4 py-2 rounded text-white ${startDate ? 'bg-green-600 hover:bg-green-700' : 'bg-gray-300 cursor-not-allowed'}`}
+          >
+            Approve Program
+          </button>
         </div>
       </div>
     );
@@ -153,7 +148,7 @@ const ProgramSection: React.FC<ProgramSectionProps> = ({
       <div className="bg-white rounded-lg shadow-md p-6 mt-8">
         <div className="flex justify-between items-center mb-2">
           <h2 className="text-2xl font-semibold">Your Fitness Program <span className="ml-2 px-2 py-1 text-xs bg-green-200 text-green-900 rounded">Approved</span></h2>
-          <button onClick={onSeeProgram} className="px-4 py-2 btn-gradient text-white rounded transition-colors">View Program Details</button>
+          <button onClick={onSeeProgram} className="btn-primary">View Program Details</button>
         </div>
         <div className="mb-2 text-gray-700">{program.weeks?.length || 0} weeks, {totalSessions} sessions</div>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -176,8 +171,8 @@ const ProgramSection: React.FC<ProgramSectionProps> = ({
           ))}
         </div>
         <div className="flex mt-4 space-x-2">
-          <button onClick={onSeeProgram} className="px-4 py-2 btn-gradient text-white rounded">See Full Program</button>
-          <button onClick={onGiveFeedback} className="px-4 py-2 bg-gray-200 rounded hover:bg-gray-300">Give Feedback</button>
+          <button onClick={onSeeProgram} className="btn-primary">See Full Program</button>
+          <button onClick={onGiveFeedback} className="btn-secondary">Give Feedback</button>
         </div>
       </div>
     );
@@ -190,7 +185,7 @@ const ProgramSection: React.FC<ProgramSectionProps> = ({
       <p className="text-gray-700 mb-4">No program has been created yet. Generate your personalized plan to get started.</p>
       <button
         onClick={onGenerateProgram}
-        className="px-6 py-2 btn-gradient text-white rounded-lg transition-colors"
+        className="btn-primary"
       >
         Generate Program
       </button>

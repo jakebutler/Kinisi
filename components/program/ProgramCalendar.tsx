@@ -4,6 +4,7 @@ import React, { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 import { buildGoogleCalendarUrl, buildICSForProgram, buildICSSession } from "@/utils/ics";
 import dynamic from "next/dynamic";
+import { supabase } from "@/utils/supabaseClient";
 
 // Attempt dynamic import so the app still compiles without FullCalendar deps installed.
 const FullCalendarDynamic: any = dynamic(() => import("@fullcalendar/react").catch(() => ({} as any)), { ssr: false });
@@ -92,9 +93,15 @@ export default function ProgramCalendar({ program, programId }: { program: any; 
     const newStart: Date | null = info?.event?.start || null;
     if (!uid || !newStart) return;
     try {
+      const { data: sess } = await supabase.auth.getSession();
+      const accessToken = sess?.session?.access_token;
       const res = await fetch(`/api/program/${programId}/schedule/feedback`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        credentials: 'include',
         body: JSON.stringify({ uid, newStartAt: fmtLocal(newStart) })
       });
       if (!res.ok) throw new Error('Failed to update');
@@ -110,9 +117,15 @@ export default function ProgramCalendar({ program, programId }: { program: any; 
     if (!uid || !start || !end) return;
     const newDurationMinutes = Math.max(1, Math.round((end.getTime() - start.getTime()) / 60000));
     try {
+      const { data: sess } = await supabase.auth.getSession();
+      const accessToken = sess?.session?.access_token;
       const res = await fetch(`/api/program/${programId}/schedule/feedback`, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          ...(accessToken ? { Authorization: `Bearer ${accessToken}` } : {}),
+        },
+        credentials: 'include',
         body: JSON.stringify({ uid, newDurationMinutes })
       });
       if (!res.ok) throw new Error('Failed to update');

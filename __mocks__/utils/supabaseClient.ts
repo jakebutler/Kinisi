@@ -53,6 +53,10 @@ const mockSupabase = {
     signInWithPassword: jest.fn().mockResolvedValue({ data: null, error: null }),
     signOut: jest.fn().mockResolvedValue({ error: null }),
     onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
+    // Added for AuthContext flows
+    exchangeCodeForSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+    verifyOtp: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
+    setSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
   },
   storage: {
     from: jest.fn(() => ({

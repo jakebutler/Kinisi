@@ -11,6 +11,7 @@ if (typeof global.Request === 'undefined') {
   const { Request } = require('node-fetch');
   global.Request = Request;
 }
+
 if (typeof global.Response === 'undefined') {
   const { Response } = require('node-fetch');
   global.Response = Response;
@@ -100,7 +101,6 @@ beforeAll(() => {
 // Ensure manual mocks are always used for key external dependencies
 jest.mock('@/utils/llm');
 jest.mock('@/utils/programDataHelpers');
-jest.mock('@/utils/supabaseClient');
 
 // Mock environment variables for tests
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
@@ -118,3 +118,63 @@ jest.mock('next/router', () => ({
     asPath: '/'
   }))
 }));
+
+// Mock next/navigation (App Router) used by client components
+jest.mock('next/navigation', () => {
+  const router = {
+    push: jest.fn(),
+    replace: jest.fn(),
+    refresh: jest.fn(),
+    prefetch: jest.fn(),
+  };
+  return {
+    useRouter: jest.fn(() => router),
+    usePathname: jest.fn(() => '/'),
+    useSearchParams: jest.fn(() => new URLSearchParams()),
+    redirect: jest.fn(),
+  };
+});
+
+// Prevent JSDOM from attempting actual navigation when setting window.location.href/hash in tests
+if (typeof window !== 'undefined') {
+  try {
+    const state = { href: 'http://localhost/' };
+    const loc = {
+      assign: jest.fn(),
+      replace: jest.fn(),
+      reload: jest.fn(),
+    };
+    Object.defineProperty(loc, 'href', {
+      get: () => state.href,
+      set: (value) => { state.href = value; },
+      configurable: true,
+    });
+    Object.defineProperty(loc, 'hash', {
+      get: () => new URL(state.href, 'http://localhost').hash,
+      set: (value) => {
+        const u = new URL(state.href, 'http://localhost');
+        u.hash = value;
+        state.href = u.toString();
+      },
+      configurable: true,
+    });
+    Object.defineProperty(loc, 'search', {
+      get: () => new URL(state.href, 'http://localhost').search,
+      configurable: true,
+    });
+    Object.defineProperty(loc, 'pathname', {
+      get: () => new URL(state.href, 'http://localhost').pathname,
+      configurable: true,
+    });
+    Object.defineProperty(loc, 'origin', {
+      get: () => new URL(state.href, 'http://localhost').origin,
+      configurable: true,
+    });
+    Object.defineProperty(window, 'location', {
+      value: loc,
+      configurable: true,
+    });
+  } catch {
+    // ignore if jsdom disallows overriding in this version
+  }
+}

@@ -16,6 +16,8 @@
     "tests/**",
     "e2e/**",
     "node_modules/**",
-    ".next/**"
+    ".next/**",
+    "prototype_example/**",
+    "v2-documentation/**"
   ]
 }

@@ -24,7 +24,8 @@ export async function POST(req: NextRequest) {
     const missing: string[] = [];
     if (typeof currentAssessment !== 'string' || !currentAssessment.trim()) missing.push('currentAssessment');
     if (typeof feedback !== 'string' || !feedback.trim()) missing.push('feedback');
-    if (typeof surveyResponses !== 'object' || surveyResponses === null) missing.push('surveyResponses');
+    // surveyResponses will be optional when revisionOfAssessmentId is supplied
+    if (!revisionOfAssessmentId && (typeof surveyResponses !== 'object' || surveyResponses === null)) missing.push('surveyResponses');
     if (missing.length) {
       return NextResponse.json({ error: `Missing or invalid: ${missing.join(', ')}` }, { status: 400 });
     }
@@ -38,46 +39,81 @@ export async function POST(req: NextRequest) {
     }
 
     const supabase = await createSupabaseServerClient();
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+    const bearer = authHeader && authHeader.startsWith('Bearer ')
+      ? authHeader.slice('Bearer '.length)
+      : undefined;
     const {
       data: { user },
       error: userError,
-    } = await supabase.auth.getUser();
+    } = bearer ? await supabase.auth.getUser(bearer) : await supabase.auth.getUser();
     if (userError || !user) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    // 2. Find the latest survey_response_id for this user
-    const { data: surveyRows, error: surveyError } = await supabase
-      .from("survey_responses")
-      .select("id")
-      .eq("user_id", user.id)
-      .order("created_at", { ascending: false })
-      .limit(1)
-      .maybeSingle(); // Use maybeSingle as we expect 0 or 1 result
+    // Determine the survey to use: if revising a specific assessment, use its linked survey
+    let surveyResponseId: string | null = null;
+    let surveyResponsesObj: Record<string, unknown> | null = null;
 
-    if (surveyError) {
-      console.error('Database error fetching survey response:', surveyError);
-      return NextResponse.json({ error: "Database error fetching survey response" }, { status: 500 });
+    if (revisionOfAssessmentId) {
+      const { data: assessRow, error: assessErr } = await supabase
+        .from('assessments')
+        .select('id, user_id, survey_response_id')
+        .eq('id', String(revisionOfAssessmentId))
+        .eq('user_id', user.id)
+        .single();
+
+      if (assessErr || !assessRow) {
+        return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
+      }
+
+      surveyResponseId = assessRow.survey_response_id as string;
+      const { data: surveyRow, error: sErr } = await supabase
+        .from('survey_responses')
+        .select('id, response')
+        .eq('id', surveyResponseId)
+        .single();
+      if (sErr || !surveyRow) {
+        return NextResponse.json({ error: 'Could not find survey response for assessment' }, { status: 404 });
+      }
+      surveyResponsesObj = surveyRow.response as Record<string, unknown>;
     }
 
-    if (!surveyRows) { // surveyRows will be null if no rows are found with maybeSingle()
-      return NextResponse.json({ error: "Could not find survey response for user" }, { status: 404 });
-    }
+    // If not revising a specific assessment, use provided surveyResponses or fallback to latest
+    if (!surveyResponsesObj) {
+      if (typeof surveyResponses === 'object' && surveyResponses !== null) {
+        surveyResponsesObj = surveyResponses as Record<string, unknown>;
+      } else {
+        const { data: latestSurvey, error: latestErr } = await supabase
+          .from('survey_responses')
+          .select('id, response')
+          .eq('user_id', user.id)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
 
-    // Extract the survey response ID - FIX for ReferenceError
-    const surveyResponseId = surveyRows.id;
+        if (latestErr) {
+          console.error('Database error fetching survey response:', latestErr);
+          return NextResponse.json({ error: 'Database error fetching survey response' }, { status: 500 });
+        }
+        if (!latestSurvey) {
+          return NextResponse.json({ error: 'Could not find survey response for user' }, { status: 404 });
+        }
+        surveyResponseId = latestSurvey.id as string;
+        surveyResponsesObj = latestSurvey.response as Record<string, unknown>;
+      }
+    }
 
     // 3. Call LangChain-powered revision agent (Moved here)
     // Cast validated inputs to concrete types for type safety
     const currentAssessmentStr = currentAssessment as string;
     const feedbackStr = feedback as string;
-    const surveyResponsesObj = surveyResponses as Record<string, unknown>;
     let revisedAssessment: string;
     try {
       revisedAssessment = await reviseAssessmentWithFeedback({
         currentAssessment: currentAssessmentStr,
         feedback: feedbackStr,
-        surveyResponses: surveyResponsesObj,
+        surveyResponses: (surveyResponsesObj ?? {}) as Record<string, any>,
       });
     } catch (e: unknown) {
       console.error('reviseAssessmentWithFeedback failed:', e);
@@ -88,28 +124,20 @@ export async function POST(req: NextRequest) {
     let assessmentError;
     
     // 4. Insert or Update assessment based on revisionOfAssessmentId
-    const dataToSave = {
-        user_id: user.id,
-        survey_response_id: surveyResponseId, // Use the correctly extracted ID
-        assessment: revisedAssessment,
-        feedback: feedbackStr, // Store the feedback that led to this assessment
-    };
-
     if (revisionOfAssessmentId) {
-        // Update existing assessment
-        console.log(`Attempting to update assessment ID: ${revisionOfAssessmentId}`);
+        // Update existing assessment in place
         const { data, error } = await supabase
             .from("assessments")
             .update({
-                ...dataToSave,
-                // We don't change revision_of on an update of a revision
-                // It should point to the original or previous revision if applicable
-                // For this logic, we assume revisionOfAssessmentId *is* the record being updated
+                user_id: user.id,
+                survey_response_id: surveyResponseId,
+                assessment: revisedAssessment,
+                feedback: feedbackStr,
             })
-            .eq("id", revisionOfAssessmentId as string)
+            .eq("id", String(revisionOfAssessmentId))
             .eq("user_id", user.id)
             .select("id, assessment")
-            .maybeSingle(); // 0 or 1 row
+            .maybeSingle();
 
         if (error) {
           assessmentError = error;
@@ -120,18 +148,19 @@ export async function POST(req: NextRequest) {
         }
 
     } else {
-        // Insert new assessment
-        console.log('Attempting to insert new assessment');
          const { data, error } = await supabase
             .from("assessments")
             .insert([
                 {
-                    ...dataToSave,
-                    revision_of: null, // New assessments don't revise others
+                    user_id: user.id,
+                    survey_response_id: surveyResponseId,
+                    assessment: revisedAssessment,
+                    feedback: feedbackStr,
+                    revision_of: null,
                 }
             ])
             .select("id, assessment")
-            .single(); // Expecting the inserted row back
+            .single();
 
         assessmentResult = data;
         assessmentError = error;

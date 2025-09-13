@@ -1,5 +1,6 @@
 import { supabase } from './supabaseClient';
 import { getSurveyResponse } from './surveyResponses';
+import { getLatestAssessment } from './assessments';
 
 /**
  * Check if a user has completed the initial survey
@@ -47,14 +48,56 @@ export async function hasCompletedSurvey(userId: string): Promise<boolean> {
 }
 
 /**
- * Determine where to redirect a user after login based on their survey completion status
+ * Check if a user has completed the full onboarding flow
+ * Based on completion criteria: Survey → Assessment (approved) → Program (approved) → Schedule
+ * @param userId - The user's ID
+ * @returns Promise<boolean> - true if onboarding is complete, false otherwise
+ */
+export async function hasCompletedOnboarding(userId: string): Promise<boolean> {
+  try {
+    // 1. Check survey completion
+    const surveyCompleted = await hasCompletedSurvey(userId);
+    if (!surveyCompleted) return false;
+
+    // 2. Check assessment completion (approved = true)
+    const { data: assessment } = await getLatestAssessment(userId);
+    if (!assessment?.approved) return false;
+
+    // 3. Check program completion (status = 'approved')
+    const { data: programs, error: programError } = await supabase
+      .from('exercise_programs')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false })
+      .limit(1);
+
+    if (programError || !programs || programs.length === 0) return false;
+    const latestProgram = programs[0];
+    if (latestProgram.status !== 'approved') return false;
+
+    // 4. Check schedule completion (program_json has sessions with start_at OR last_scheduled_at is set)
+    const hasScheduledSessions = latestProgram.program_json && 
+      Array.isArray(latestProgram.program_json) &&
+      latestProgram.program_json.some((session: any) => session.start_at);
+    
+    const hasLastScheduledAt = latestProgram.last_scheduled_at !== null;
+    
+    return hasScheduledSessions || hasLastScheduledAt;
+  } catch (err) {
+    console.error('Error in hasCompletedOnboarding:', err);
+    return false;
+  }
+}
+
+/**
+ * Determine where to redirect a user after login based on their onboarding completion status
  * @param userId - The user's ID
  * @returns Promise<string> - The path to redirect to
  */
 export async function getPostLoginRedirect(userId: string): Promise<string> {
-  const surveyCompleted = await hasCompletedSurvey(userId);
+  const onboardingCompleted = await hasCompletedOnboarding(userId);
   
-  if (surveyCompleted) {
+  if (onboardingCompleted) {
     return '/dashboard';
   } else {
     return '/survey';

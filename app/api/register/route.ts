@@ -97,7 +97,7 @@ export async function POST(request: Request) {
         email: email,
         password: password,
         options: {
-          redirectTo: siteUrl ? `${siteUrl}/survey` : undefined,
+          redirectTo: siteUrl ? `${siteUrl}/auth/callback?next=/survey` : undefined,
         },
     });
 

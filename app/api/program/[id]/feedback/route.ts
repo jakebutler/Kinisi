@@ -6,7 +6,7 @@ import { createSupabaseServerClient } from "@/utils/supabaseServer";
 
 export async function POST(req: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const { id } = (await params) || ({} as { id?: string });
+    const { id } = await params || ({} as { id?: string });
     if (!id || typeof id !== "string") {
       return NextResponse.json({ error: "Missing or invalid program ID" }, { status: 400 });
     }
