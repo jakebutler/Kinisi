@@ -137,7 +137,7 @@ SURVEY ANSWERS:\n{{survey}}`;
   });
 
   // Use OpenAI's gpt-3.5-turbo by default; ensure API key present
-  const apiKey = process.env.OPENAI_API_KEY || process.env.NEXT_PUBLIC_OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not configured on the server");
   }
@@ -156,10 +156,12 @@ SURVEY ANSWERS:\n{{survey}}`;
     new StringOutputParser()
   ]);
 
-  // Track the prompt run (non-blocking)
-  try {
+  // Track the prompt run (fire-and-forget)
+  {
     const envTag = process.env.NODE_ENV === "production" ? "prod" : "dev";
-    await trackPromptRun({
+    // Intentionally do not await
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    trackPromptRun({
       promptName: "Personalized Assessment",
       inputVariables: { survey: augmentedSurvey },
       tags: [envTag, "assessment", "v2"],
@@ -171,7 +173,7 @@ SURVEY ANSWERS:\n{{survey}}`;
         temperature,
       },
     });
-  } catch {}
+  }
 
   // Run the chain
   const assessment = await chain.invoke({ survey: augmentedSurvey });
@@ -223,7 +225,7 @@ CURRENT ASSESSMENT:\n{{assessment}}\n\nFEEDBACK:\n{{feedback}}\n\nSURVEY ANSWERS
   });
 
   // Use OpenAI's gpt-3.5-turbo by default (ensure API key)
-  const apiKey = process.env.OPENAI_API_KEY || process.env.NEXT_PUBLIC_OPENAI_API_KEY;
+  const apiKey = process.env.OPENAI_API_KEY;
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not configured on the server");
   }
@@ -242,21 +244,24 @@ CURRENT ASSESSMENT:\n{{assessment}}\n\nFEEDBACK:\n{{feedback}}\n\nSURVEY ANSWERS
     new StringOutputParser()
   ]);
 
-  // Track the prompt run (non-blocking)
-  try {
+  // Track the prompt run (fire-and-forget)
+  {
     const envTag = process.env.NODE_ENV === "production" ? "prod" : "dev";
-    await trackPromptRun({
+    // Intentionally do not await
+    // eslint-disable-next-line @typescript-eslint/no-floating-promises
+    trackPromptRun({
       promptName: "Update Personalized Assessment",
       inputVariables: { survey: surveyText },
       tags: [envTag, "assessment_revision", "v2"],
       metadata: {
         userId,
         revisionOfAssessmentId,
+        usedRegistry,
         model: modelName,
         temperature,
       },
     });
-  } catch {}
+  }
 
   // Run the chain
   const revised = await chain.invoke({

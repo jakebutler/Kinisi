@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
     // Determine the survey to use: if revising a specific assessment, use its linked survey
     let surveyResponseId: string | null = null;
     let surveyResponsesObj: Record<string, unknown> | null = null;
+    let providedSurveyFromBody = false;
 
     if (revisionOfAssessmentId) {
       const { data: assessRow, error: assessErr } = await supabase
@@ -86,6 +87,7 @@ export async function POST(req: NextRequest) {
     if (!surveyResponsesObj) {
       if (typeof surveyResponses === 'object' && surveyResponses !== null) {
         surveyResponsesObj = surveyResponses as Record<string, unknown>;
+        providedSurveyFromBody = true;
       } else {
         const { data: latestSurvey, error: latestErr } = await supabase
           .from('survey_responses')
@@ -105,6 +107,22 @@ export async function POST(req: NextRequest) {
         surveyResponseId = latestSurvey.id as string;
         surveyResponsesObj = latestSurvey.response as Record<string, unknown>;
       }
+    }
+
+    // If client supplied surveyResponses in the body (and we are not revising an existing assessment),
+    // persist them to survey_responses and capture the id for linkage.
+    if (!revisionOfAssessmentId && providedSurveyFromBody && surveyResponsesObj) {
+      const { data: insertedSurvey, error: insertSurveyError } = await supabase
+        .from('survey_responses')
+        .insert([{ user_id: user.id, response: surveyResponsesObj }])
+        .select('id')
+        .single();
+
+      if (insertSurveyError || !insertedSurvey) {
+        console.error('Database error saving supplied survey response:', insertSurveyError);
+        return NextResponse.json({ error: 'Failed to store survey response' }, { status: 500 });
+      }
+      surveyResponseId = insertedSurvey.id as string;
     }
 
     // 3. Call LangChain-powered revision agent (Moved here)
@@ -128,41 +146,35 @@ export async function POST(req: NextRequest) {
     let assessmentResult;
     let assessmentError;
     
-    // 4. Insert or Update assessment based on revisionOfAssessmentId
+    // 4. Insert assessment: append-only for revisions (use revision_of)
     if (revisionOfAssessmentId) {
-        // Update existing assessment in place
         const { data, error } = await supabase
             .from("assessments")
-            .update({
+            .insert([
+              {
                 user_id: user.id,
                 survey_response_id: surveyResponseId,
                 assessment: revisedAssessment,
                 feedback: feedbackStr,
-            })
-            .eq("id", String(revisionOfAssessmentId))
-            .eq("user_id", user.id)
+                revision_of: String(revisionOfAssessmentId),
+              }
+            ])
             .select("id, assessment")
-            .maybeSingle();
+            .single();
 
-        if (error) {
-          assessmentError = error;
-        } else if (!data) {
-          return NextResponse.json({ error: 'Assessment not found' }, { status: 404 });
-        } else {
-          assessmentResult = data;
-        }
-
+        assessmentResult = data;
+        assessmentError = error;
     } else {
          const { data, error } = await supabase
             .from("assessments")
             .insert([
-                {
-                    user_id: user.id,
-                    survey_response_id: surveyResponseId,
-                    assessment: revisedAssessment,
-                    feedback: feedbackStr,
-                    revision_of: null,
-                }
+              {
+                user_id: user.id,
+                survey_response_id: surveyResponseId,
+                assessment: revisedAssessment,
+                feedback: feedbackStr,
+                revision_of: null,
+              }
             ])
             .select("id, assessment")
             .single();
