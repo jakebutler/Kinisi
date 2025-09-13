@@ -6,6 +6,20 @@ import { createSupabaseServerClient } from '../../../../utils/supabaseServer';
 // POST /api/assessment/feedback
 export async function POST(req: NextRequest) {
   try {
+    // Auth check first to ensure unauthenticated requests return 401 before validation
+    const supabase = await createSupabaseServerClient();
+    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
+    const bearer = authHeader && authHeader.startsWith('Bearer ')
+      ? authHeader.slice('Bearer '.length)
+      : undefined;
+    const {
+      data: { user },
+      error: userError,
+    } = bearer ? await supabase.auth.getUser(bearer) : await supabase.auth.getUser();
+    if (userError || !user) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     let body: unknown;
     try {
       body = await req.json();
@@ -38,18 +52,7 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const supabase = await createSupabaseServerClient();
-    const authHeader = req.headers.get('authorization') || req.headers.get('Authorization');
-    const bearer = authHeader && authHeader.startsWith('Bearer ')
-      ? authHeader.slice('Bearer '.length)
-      : undefined;
-    const {
-      data: { user },
-      error: userError,
-    } = bearer ? await supabase.auth.getUser(bearer) : await supabase.auth.getUser();
-    if (userError || !user) {
-      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
-    }
+    // user is authenticated at this point
 
     // Determine the survey to use: if revising a specific assessment, use its linked survey
     let surveyResponseId: string | null = null;
@@ -114,6 +117,8 @@ export async function POST(req: NextRequest) {
         currentAssessment: currentAssessmentStr,
         feedback: feedbackStr,
         surveyResponses: (surveyResponsesObj ?? {}) as Record<string, any>,
+        userId: user.id,
+        revisionOfAssessmentId: revisionOfAssessmentId as string | undefined,
       });
     } catch (e: unknown) {
       console.error('reviseAssessmentWithFeedback failed:', e);

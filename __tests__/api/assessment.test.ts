@@ -232,6 +232,10 @@ describe('/api/assessment', () => {
     expect(response.status).toBe(200);
     expect(data.id).toBe('assessment-1');
     expect(data.assessment).toBe('Generated assessment');
-    expect(mockGenerateAssessment).toHaveBeenCalledWith({ goal: 'fitness', experience: 'beginner' });
+    // Updated signature passes options with userId
+    expect(mockGenerateAssessment).toHaveBeenCalledWith(
+      { goal: 'fitness', experience: 'beginner' },
+      { userId: 'user-1' }
+    );
   });
 });
