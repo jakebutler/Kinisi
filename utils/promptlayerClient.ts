@@ -1,9 +1,17 @@
 // utils/promptlayerClient.ts
 // Lazy PromptLayer client helper with test/dev safeguards
 
-import type { PromptLayer as PromptLayerType } from "promptlayer";
+// Avoid static imports from the 'promptlayer' package so Next.js doesn't try to
+// bundle optional peer dependencies (@anthropic-ai/sdk, @google/genai, etc.).
+// We'll dynamically require the module at runtime on the server only.
 
-let _pl: PromptLayerType | null = null;
+type PromptLayerClient = {
+  // Minimal surface we use; keep as any to avoid pulling in types
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  run: (args: any) => Promise<any>;
+} | null;
+
+let _pl: PromptLayerClient = null;
 
 /**
  * Returns a singleton PromptLayer client or null when disabled.
@@ -12,7 +20,7 @@ let _pl: PromptLayerType | null = null;
  * - process.env.DISABLE_PROMPTLAYER_TRACKING is truthy
  * - PROMPTLAYER_API_KEY is missing
  */
-export function getPromptLayerClient(): PromptLayerType | null {
+export function getPromptLayerClient(): PromptLayerClient {
   try {
     if (process.env.NODE_ENV === "test") return null;
     if (String(process.env.DISABLE_PROMPTLAYER_TRACKING || "").toLowerCase() === "true") return null;
@@ -21,9 +29,10 @@ export function getPromptLayerClient(): PromptLayerType | null {
     if (!apiKey) return null;
 
     if (_pl) return _pl;
-    // Note: direct import is fine in server context; this file should not be bundled into client code paths.
-    // If needed, convert to dynamic import to avoid ESM/CJS interop concerns.
-    const { PromptLayer } = require("promptlayer") as { PromptLayer: new (args: { apiKey: string }) => PromptLayerType };
+    // Use eval('require') to prevent bundlers from resolving 'promptlayer' at build time
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    const req: any = eval('require');
+    const { PromptLayer } = req("promptlayer");
     _pl = new PromptLayer({ apiKey });
     return _pl;
   } catch (e) {
