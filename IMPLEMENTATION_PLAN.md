@@ -1,221 +1,78 @@
-# Kinisi v2 Frontend Implementation Plan
+# PromptLayer “Prompt History” Tracking — Implementation Plan
 
-*Updated based on v2 POC analysis - leveraging proven patterns and components*
+## Overview
+- Non-blocking PromptLayer tracking for Assessment and Revision prompts, preserving existing LangChain execution and Prompt Registry fetch behavior.
+- Aligned with [DEVELOPER_WORKFLOW.md](cci:7://file:///Users/jacobbutler/Documents/GitHub/Kinisi/DEVELOPER_WORKFLOW.md:0:0-0:0):
+  - Tests isolate external services; all real network calls blocked.
+  - Next.js API route testing uses global mocks in [jest.setup.js](cci:7://file:///Users/jacobbutler/Documents/GitHub/Kinisi/jest.setup.js:0:0-0:0).
+  - Build-only typecheck via [tsconfig.build.json](cci:1://file:///Users/jacobbutler/Documents/GitHub/Kinisi/__tests__/integration/api/program-revise-api.test.ts:121:18-121:44).
+  - Pre-PR verification: `npm run lint`, `npm test`, `npm run typecheck`, `npm run build`.
 
-## Stage 1: Foundation & Core Infrastructure
-**Goal**: Establish new v2 foundation with authentication and routing, adapting POC patterns to Next.js
-**Success Criteria**: 
-- New v2 folder structure created (`app/(auth)`, `app/(onboarding)`, `app/(dashboard)`, `components/v2/`, `lib/v2/`)
-- Authentication flow working with existing Supabase backend
-- Route protection implemented for onboarding and dashboard routes
-- **Base UI components ported from POC**: Button, Header components with Kinisi branding
-- **State management**: Start with React Context (simpler than Zustand, matches POC approach)
-- **Icons**: Integrate Lucide React (proven in POC)
-- TypeScript interfaces matching POC patterns
+## Environment
+- `PROMPTLAYER_API_KEY` in staging/prod.
+- Optional: `DISABLE_PROMPTLAYER_TRACKING=true` to force no-op in dev.
 
-**Tests**: 
-- Authentication flow unit tests
-- Route protection integration tests
-- Base component rendering tests (Button, Header)
-- Context provider behavior tests
+## Global checklist
+- [x] Create feature branch `feat/promptlayer-tracking`
+- [x] Add [utils/promptlayerClient.ts](cci:7://file:///Users/jacobbutler/Documents/GitHub/Kinisi/utils/promptlayerClient.ts:0:0-0:0) (lazy client, test env no-op)
+- [x] Append [trackPromptRun()](cci:1://file:///Users/jacobbutler/Documents/GitHub/Kinisi/utils/promptlayer.ts:71:0-100:1) helper to [utils/promptlayer.ts](cci:7://file:///Users/jacobbutler/Documents/GitHub/Kinisi/utils/promptlayer.ts:0:0-0:0) with safe try/catch
+- [x] Mock [trackPromptRun](cci:1://file:///Users/jacobbutler/Documents/GitHub/Kinisi/utils/promptlayer.ts:71:0-100:1) in [jest.setup.js](cci:7://file:///Users/jacobbutler/Documents/GitHub/Kinisi/jest.setup.js:0:0-0:0) (no-op but assertable)
+- [x] Instrument [generateAssessmentFromSurvey()](cci:1://file:///Users/jacobbutler/Documents/GitHub/Kinisi/utils/assessmentChain.ts:82:0-178:1) with tags/metadata (`usedRegistry`, `ragChunksCount`)
+- [x] Instrument [reviseAssessmentWithFeedback()](cci:1://file:///Users/jacobbutler/Documents/GitHub/Kinisi/utils/assessmentChain.ts:181:0-267:1) with tags/metadata (`revisionOfAssessmentId`)
+- [x] Wire `userId` (and `revisionOfAssessmentId`) from API routes into `assessmentChain` calls
+- [ ] Add unit tests asserting tracking payloads
+- [ ] Ensure no real network calls in tests; registry fetch continues to fallback under blocked fetch
+- [ ] Optional docs update in [DEVELOPER_WORKFLOW.md](cci:7://file:///Users/jacobbutler/Documents/GitHub/Kinisi/DEVELOPER_WORKFLOW.md:0:0-0:0) (PromptLayer notes)
+- [ ] Pre-PR verification: lint, test, typecheck, build
 
-**Status**: Not Started
+## Stage 1: PromptLayer Client + Tracking Helper
+- Goal: Lazy client + safe non-throwing [trackPromptRun()](cci:1://file:///Users/jacobbutler/Documents/GitHub/Kinisi/utils/promptlayer.ts:71:0-100:1) utility; no-ops in tests.
+- Status: [x] Complete
 
-## Stage 2: Onboarding Flow - Survey & Assessment
-**Goal**: Implement steps 1-2 of onboarding (Survey → Assessment), adapting POC components
-**Success Criteria**:
-- **OnboardingProgress component**: Port from POC with 4-step progress tracker
-- **IntakeSurvey component**: Multi-question form with progress bar and validation (from POC)
-- **PersonalizedAssessment component**: Draft/Approved workflow with request updates (from POC)
-- Survey submission to existing `POST /api/assessment` endpoint
-- Assessment generation and display with loading states
-- **POC patterns**: Question-by-question navigation, confidence slider, exercise selection
-- State management for survey data and assessment status using Context
+## Stage 2: Instrument Assessment Generation (RAG-aware)
+- Goal: Track generation with env/feature/version tags and rich metadata; keep LangChain path unchanged.
+- Status: [x] Complete
 
-**Tests**: 
-- Survey form validation and submission tests
-- Assessment generation workflow tests
-- Progress tracker state transition tests
-- Request updates flow integration tests
+## Stage 3: Instrument Assessment Revision
+- Goal: Track revision with env/feature/version tags, optional `revisionOfAssessmentId`.
+- Status: [x] Complete
 
-**Status**: Not Started
+## Stage 4: Pass Metadata from API Routes + Test-Safe Mocks
+- Goal: Provide `userId` (and `revisionOfAssessmentId`) from API routes; ensure tests can assert calls with no network.
+- Status: [x] Complete (route wiring); [ ] Tests pending
 
-## Stage 3: Onboarding Flow - Program & Schedule
-**Goal**: Complete onboarding with steps 3-4 (Program → Schedule), using POC components
-**Success Criteria**:
-- **ExerciseProgram component**: Port from POC with week/session structure and expand/collapse
-- **CalendarView component**: Port from POC with date selection and session preview
-- Program approval workflow with Draft/Approved states (POC pattern)
-- Schedule generation using existing `POST /api/program/[id]/schedule` endpoint
-- **POC patterns**: Exercise details toggle, session expansion, calendar navigation
-- Complete onboarding → Active user transition
-- Progress tracker steps 3-4 functional
-- Start date selection and scheduling preferences UI
+## Stage 5: Documentation & Rollout
+- Goal: Ops notes + verify Prompt History in staging/prod.
+- Status: [ ] Not Started
 
-**Tests**: 
-- Program display and interaction tests
-- Schedule generation integration tests
-- Calendar integration tests
-- Onboarding completion flow tests
-
-**Status**: Not Started
-
-## Stage 4: Active User Dashboard
-**Goal**: Implement 3-page navigation for active users, using POC Navigation component
-**Success Criteria**:
-- **Navigation component**: Port from POC with 3-tab layout (program, assessment, survey)
-- **Fitness Program & Schedule page**: Reuse ExerciseProgram component with `isActive` prop
-- **Assessment management page**: Reuse PersonalizedAssessment component with `isActive` prop
-- **Survey update page**: Reuse IntakeSurvey component for editing responses
-- **POC patterns**: Tab-based navigation, component reuse with different modes
-- Update request workflows for all content types (proven in POC)
-- Calendar export functionality (Google Calendar, .ics files)
-- Session rescheduling and program modification features
-
-**Tests**: 
-- Dashboard navigation tests
-- Update workflow integration tests
-- Calendar functionality tests
-- Export feature tests
-
-**Status**: Not Started
-
-## Stage 5: Polish & Migration
-**Goal**: Production readiness and migration strategy
-**Success Criteria**:
-- Performance optimization (code splitting, lazy loading, bundle analysis)
-- Accessibility compliance (WCAG 2.1 AA standards)
-- Error handling and loading states throughout application
-- Mobile responsiveness and cross-browser compatibility
-- Migration plan from v1 to v2 with feature flags
-- Documentation updates for v2 architecture
-- E2E test coverage for critical user journeys
-
-**Tests**: 
-- E2E flows with Playwright
-- Performance tests and lighthouse scores
-- Accessibility tests with axe-core
-- Cross-browser compatibility tests
-
-**Status**: Not Started
-
-## Technical Architecture
-
-### State Management
-- **React Context** for global state management (matches POC approach)
-- **User Context**: Authentication state, user status (onboarding/active)
-- **Onboarding Context**: Current step, survey data, assessment, program
-- **UI Context**: Loading states, error handling, notifications
-- **POC Pattern**: Local useState for component-specific state, Context for shared state
-
-### Component Architecture (Based on POC)
-```
-components/v2/
-├── ui/                        # Base UI components (ported from POC)
-│   ├── Button.tsx            # ✓ Proven in POC with Kinisi branding
-│   ├── Header.tsx            # ✓ Proven in POC
-│   └── Input.tsx             # New, following POC patterns
-├── onboarding/               # Onboarding components (ported from POC)
-│   ├── OnboardingProgress.tsx # ✓ 4-step progress tracker from POC
-│   ├── IntakeSurvey.tsx      # ✓ Multi-question form from POC
-│   ├── PersonalizedAssessment.tsx # ✓ Draft/approved workflow from POC
-│   ├── ExerciseProgram.tsx   # ✓ Week/session structure from POC
-│   └── CalendarView.tsx      # ✓ Date selection from POC
-├── dashboard/                # Dashboard components (POC patterns)
-│   ├── Navigation.tsx        # ✓ 3-tab navigation from POC
-│   └── DashboardLayout.tsx   # New, wrapping POC components
-└── shared/                   # Shared utilities
-    └── LoadingSpinner.tsx    # New, following POC styling
-```
-
-### API Integration
-- **Custom hooks** for API interactions (`useAssessment`, `useProgram`, `useSchedule`)
-- **Error handling** with consistent patterns
-- **Loading states** managed through Context (matches POC local state approach)
-- **Type safety** with existing backend interfaces
-- **POC Integration**: Replace mock data with real API calls, maintain UX patterns
-
-### Routing Strategy
-```
-app/
-├── (auth)/                   # Authentication routes
-│   ├── login/page.tsx
-│   ├── register/page.tsx
-│   └── layout.tsx
-├── (onboarding)/            # Onboarding routes
-│   ├── survey/page.tsx
-│   ├── assessment/page.tsx
-│   ├── program/page.tsx
-│   ├── schedule/page.tsx
-│   └── layout.tsx
-└── (dashboard)/             # Active user routes
-    ├── fitness-program/page.tsx
-    ├── assessment/page.tsx
-    ├── survey/page.tsx
-    └── layout.tsx
-```
-
-## Migration Strategy
-
-### Phase 1: Parallel Development
-- Build v2 alongside existing v1 code
-- Use feature flags to control access
-- Test with internal users first
-
-### Phase 2: Gradual Rollout
-- New users automatically use v2
-- Existing users migrate on next login
-- Rollback capability maintained
-
-### Phase 3: Full Migration
-- All users on v2
-- Remove v1 code after validation period
-- Update documentation and deployment
-
-## Risk Mitigation
-
-### Technical Risks
-- **API Compatibility**: Extensive testing with existing backend
-- **Performance**: Bundle size monitoring, lazy loading implementation
-- **State Management**: Comprehensive Zustand store testing
-
-### User Experience Risks
-- **Migration Disruption**: Gradual rollout with user feedback
-- **Feature Parity**: Ensure v2 matches/exceeds v1 functionality
-- **Accessibility**: WCAG compliance testing throughout
-
-## Stage 0: Test Stabilization & Mocks
-**Goal**: Stabilize Jest unit/integration tests for the onboarding flow and related hooks/routes by using deterministic mocks and eliminating flaky provider effects.
-**Success Criteria**:
-- 100% passing Jest suite locally and in CI (no real network calls).
-- Onboarding flow tests use a controlled `OnboardingContext` mock with mutable state and a pass-through provider.
-- Replaced brittle fetch/notification assertions with UI-based assertions or direct hook-call assertions where appropriate.
-- API route auth tests mock Supabase server before importing route modules; no 401s when valid auth is mocked.
-- Dashboard data hook tests use chainable Supabase query mocks that support multiple `eq()` calls.
-
-**Tests**:
-- `__tests__/integration/onboarding-flow.test.tsx`
-- `__tests__/integration/api-authentication.test.ts`
-- `__tests__/lib/v2/hooks/useDashboardData.test.ts`
-- `__tests__/hooks/useProgram.test.ts`
-
-**Status**: Complete
-
-**Key changes (high level)**:
-- Onboarding integration tests now control onboarding state explicitly via a manual context mock and `__setOnboardingState` helper; `ProtectedRoute` is mocked to a no-op for test determinism.
-- `lib/v2/hooks/useProgram.ts` aligned endpoints/bodies with tests, added guarded `getSession()` access, and consistently includes Authorization headers.
-- API auth tests now reset modules and apply Supabase server mocks before dynamic route imports; added virtual mocks to support relative/absolute imports.
-- Dashboard data tests use a reusable, chainable Supabase query mock to support `select().eq().eq().order().limit()` chains without flakiness.
-
----
+## Risks & Mitigations
+- ESM/CJS interop: lazy singleton and server-only require.
+- Test flakiness: only mock [trackPromptRun](cci:1://file:///Users/jacobbutler/Documents/GitHub/Kinisi/utils/promptlayer.ts:71:0-100:1); keep Prompt Registry behavior but blocked to force fallback.
+- Privacy: redaction hook ready; currently sending formatted survey only.
+- Observability drift: consistent tags (env, feature, v2) + `usedRegistry`/`ragChunksCount`.
 
 ## Definition of Done
+- Tests passing; no real network calls in Jest.
+- Typecheck/build succeed; lint clean.
+- Prompt History entries visible with expected tags/metadata.
+- Clear commit messages; small, working changes.
 
-Each stage must meet:
-- All tests passing (unit, integration, E2E where applicable)
-- TypeScript compilation with no errors
-- ESLint and Prettier formatting clean
-- Code review completed
-- Documentation updated
-- Accessibility requirements met
-- Performance benchmarks satisfied
+## Pre-PR Checklist
+- `npm run lint`
+- `npm test`
+- `npm run typecheck`
+- `npm run build`
+
+## What’s already implemented
+- [utils/promptlayerClient.ts](cci:7://file:///Users/jacobbutler/Documents/GitHub/Kinisi/utils/promptlayerClient.ts:0:0-0:0) (lazy client, test/dev safe)
+- [utils/promptlayer.ts](cci:7://file:///Users/jacobbutler/Documents/GitHub/Kinisi/utils/promptlayer.ts:0:0-0:0) [trackPromptRun()](cci:1://file:///Users/jacobbutler/Documents/GitHub/Kinisi/utils/promptlayer.ts:71:0-100:1)
+- [utils/assessmentChain.ts](cci:7://file:///Users/jacobbutler/Documents/GitHub/Kinisi/utils/assessmentChain.ts:0:0-0:0) instrumented generation & revision; added `opts.userId` & `revisionOfAssessmentId`
+- [app/api/assessment/route.ts](cci:7://file:///Users/jacobbutler/Documents/GitHub/Kinisi/app/api/assessment/route.ts:0:0-0:0) passes `userId`
+- [app/api/assessment/feedback/route.ts](cci:7://file:///Users/jacobbutler/Documents/GitHub/Kinisi/app/api/assessment/feedback/route.ts:0:0-0:0) passes `userId` & `revisionOfAssessmentId`
+- [jest.setup.js](cci:7://file:///Users/jacobbutler/Documents/GitHub/Kinisi/jest.setup.js:0:0-0:0) mocks [trackPromptRun](cci:1://file:///Users/jacobbutler/Documents/GitHub/Kinisi/utils/promptlayer.ts:71:0-100:1) to a resolved no-op
+
+## Tests to add (next step)
+- Unit: `__tests__/unit/assessmentChain.promptlayer.test.ts`
+  - Mock RAG to return `[]` and no context.
+  - Spy `RunnableSequence.from` to avoid LLM calls.
+  - Assert [trackPromptRun](cci:1://file:///Users/jacobbutler/Documents/GitHub/Kinisi/utils/promptlayer.ts:71:0-100:1) called with correct `promptName`, `tags`, and `metadata`.

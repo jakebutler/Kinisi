@@ -51,7 +51,7 @@ export async function POST(req: NextRequest) {
     // Call LangChain-powered assessment generator
     let assessment: string;
     try {
-      assessment = await generateAssessmentFromSurvey(surveyResponses);
+      assessment = await generateAssessmentFromSurvey(surveyResponses, { userId: user.id });
     } catch (e: unknown) {
       console.error('[assessment] Generation failed:', e);
       return NextResponse.json({ error: 'Failed to generate assessment' }, { status: 500 });

@@ -59,3 +59,43 @@ export async function fetchPromptFromRegistry(promptId: number): Promise<string>
   return content;
 }
 
+// --- Prompt History Tracking -------------------------------------------------
+
+// Keep types local to avoid leaking SDK types into global scope
+type TrackArgs = {
+  promptName: string;
+  inputVariables: Record<string, any>;
+  tags?: string[];
+  metadata?: Record<string, any>;
+};
+
+/**
+ * Track a prompt run in PromptLayer's Prompt History without affecting
+ * the LLM execution path. This is a safe, best-effort call that no-ops
+ * when PromptLayer is not configured or disabled, and never throws.
+ */
+export async function trackPromptRun({
+  promptName,
+  inputVariables,
+  tags = [],
+  metadata = {},
+}: TrackArgs): Promise<void> {
+  try {
+    const { getPromptLayerClient } = await import("./promptlayerClient");
+    const pl = getPromptLayerClient();
+    if (!pl) return; // Graceful no-op in tests/dev without key
+
+    // Use the PromptLayer SDK's run method to register a run
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    await (pl as any).run({
+      promptName,
+      inputVariables,
+      tags,
+      metadata,
+    });
+  } catch (e) {
+    // Non-fatal: do not disrupt generation paths
+    // eslint-disable-next-line no-console
+    console.warn("[PromptLayer] tracking failed:", e);
+  }
+}

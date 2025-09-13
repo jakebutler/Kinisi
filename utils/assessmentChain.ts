@@ -2,7 +2,7 @@ import { ChatOpenAI } from "@langchain/openai";
 import { PromptTemplate } from "@langchain/core/prompts";
 import { StringOutputParser } from "@langchain/core/output_parsers";
 import { RunnableSequence } from "@langchain/core/runnables";
-import { fetchPromptFromRegistry } from "./promptlayer";
+import { fetchPromptFromRegistry, trackPromptRun } from "@/utils/promptlayer";
 import { retrieveRagChunksForSurvey, formatChunksAsContext } from "./rag";
 
 // Helper: Format survey responses into a concise, human-readable block for the LLM
@@ -82,14 +82,19 @@ function formatSurveyForLLM(survey: Record<string, any>): string {
 
 // Function to generate an assessment using LangChain and OpenAI
 // Integrates PromptLayer SDK for tracing and prompt management
-export async function generateAssessmentFromSurvey(surveyResponses: Record<string, any>): Promise<string> {
+export async function generateAssessmentFromSurvey(
+  surveyResponses: Record<string, any>,
+  opts?: { userId?: string }
+): Promise<string> {
   // Format survey responses in a robust, lossless way
   const surveyText = formatSurveyForLLM(surveyResponses);
 
   // Retrieve RAG context based on survey responses (graceful fallback on failure)
   let augmentedSurvey = surveyText;
+  let ragChunksCount = 0;
   try {
     const ragChunks = await retrieveRagChunksForSurvey(surveyResponses, 5);
+    ragChunksCount = Array.isArray(ragChunks) ? ragChunks.length : 0;
     const ctx = formatChunksAsContext(ragChunks);
     if (ctx) {
       augmentedSurvey = `${surveyText}\n\nCONTEXT (optional, use only if relevant):\n${ctx}`;
@@ -101,8 +106,10 @@ export async function generateAssessmentFromSurvey(surveyResponses: Record<strin
   // Fetch prompt template from PromptLayer registry with fallback
   const ASSESSMENT_PROMPT_ID = 80123; // ID for 'Personalized Assessment'
   let promptTemplate: string;
+  let usedRegistry = false;
   try {
     promptTemplate = await fetchPromptFromRegistry(ASSESSMENT_PROMPT_ID);
+    usedRegistry = true;
   } catch (e) {
     console.warn("PromptLayer unavailable or misconfigured, using fallback prompt.", e);
     promptTemplate = `You are an experienced fitness coach creating a personalized initial assessment.
@@ -134,9 +141,11 @@ SURVEY ANSWERS:\n{{survey}}`;
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not configured on the server");
   }
+  const modelName = "gpt-3.5-turbo" as const; // Change to "gpt-4" or other as needed
+  const temperature = 0.7;
   const llm = new ChatOpenAI({
-    modelName: "gpt-3.5-turbo", // Change to "gpt-4" or other as needed
-    temperature: 0.7,
+    modelName,
+    temperature,
     apiKey,
   });
 
@@ -146,6 +155,23 @@ SURVEY ANSWERS:\n{{survey}}`;
     llm,
     new StringOutputParser()
   ]);
+
+  // Track the prompt run (non-blocking)
+  try {
+    const envTag = process.env.NODE_ENV === "production" ? "prod" : "dev";
+    await trackPromptRun({
+      promptName: "Personalized Assessment",
+      inputVariables: { survey: augmentedSurvey },
+      tags: [envTag, "assessment", "v2"],
+      metadata: {
+        userId: opts?.userId,
+        usedRegistry,
+        ragChunksCount,
+        model: modelName,
+        temperature,
+      },
+    });
+  } catch {}
 
   // Run the chain
   const assessment = await chain.invoke({ survey: augmentedSurvey });
@@ -157,11 +183,15 @@ SURVEY ANSWERS:\n{{survey}}`;
 export async function reviseAssessmentWithFeedback({
   currentAssessment,
   feedback,
-  surveyResponses
+  surveyResponses,
+  userId,
+  revisionOfAssessmentId,
 }: {
   currentAssessment: string;
   feedback: string;
   surveyResponses: Record<string, any>;
+  userId?: string;
+  revisionOfAssessmentId?: string;
 }): Promise<string> {
   // Format survey responses robustly
   const surveyText = formatSurveyForLLM(surveyResponses);
@@ -169,8 +199,10 @@ export async function reviseAssessmentWithFeedback({
   // Fetch revision prompt template from PromptLayer registry (with fallback)
   const REVISION_PROMPT_ID = 80132; // ID for 'Update Personalized Assessment'
   let revisionPromptTemplate: string;
+  let usedRegistry = false;
   try {
     revisionPromptTemplate = await fetchPromptFromRegistry(REVISION_PROMPT_ID);
+    usedRegistry = true;
   } catch (e) {
     console.warn("PromptLayer unavailable or misconfigured, using fallback revision prompt.", e);
     revisionPromptTemplate = `You are revising a fitness assessment based on user feedback. Keep helpful parts, address the feedback, and tighten wording.
@@ -195,9 +227,11 @@ CURRENT ASSESSMENT:\n{{assessment}}\n\nFEEDBACK:\n{{feedback}}\n\nSURVEY ANSWERS
   if (!apiKey) {
     throw new Error("OPENAI_API_KEY is not configured on the server");
   }
+  const modelName = "gpt-3.5-turbo" as const;
+  const temperature = 0.7;
   const llm = new ChatOpenAI({
-    modelName: "gpt-3.5-turbo",
-    temperature: 0.7,
+    modelName,
+    temperature,
     apiKey,
   });
 
@@ -207,6 +241,22 @@ CURRENT ASSESSMENT:\n{{assessment}}\n\nFEEDBACK:\n{{feedback}}\n\nSURVEY ANSWERS
     llm,
     new StringOutputParser()
   ]);
+
+  // Track the prompt run (non-blocking)
+  try {
+    const envTag = process.env.NODE_ENV === "production" ? "prod" : "dev";
+    await trackPromptRun({
+      promptName: "Update Personalized Assessment",
+      inputVariables: { survey: surveyText },
+      tags: [envTag, "assessment_revision", "v2"],
+      metadata: {
+        userId,
+        revisionOfAssessmentId,
+        model: modelName,
+        temperature,
+      },
+    });
+  } catch {}
 
   // Run the chain
   const revised = await chain.invoke({

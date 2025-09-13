@@ -17,6 +17,16 @@ if (typeof global.Response === 'undefined') {
   global.Response = Response;
 }
 
+// Polyfill WHATWG streams needed by LangChain in Node test env
+try {
+  if (typeof global.ReadableStream === 'undefined') {
+    const { ReadableStream, WritableStream, TransformStream } = require('stream/web');
+    global.ReadableStream = ReadableStream;
+    global.WritableStream = WritableStream;
+    global.TransformStream = TransformStream;
+  }
+} catch {}
+
 // Mock NextResponse and NextRequest for API route testing
 jest.mock('next/server', () => {
   class MockNextResponse {
@@ -70,10 +80,19 @@ jest.mock('next/server', () => {
 // Block all real network calls in tests
 beforeAll(() => {
   // Block fetch
-  if (global.fetch) {
+  if (typeof global.fetch === 'undefined') {
+    // Define a stub to satisfy libs expecting fetch to exist
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+    const stub = (..._args) => {
+      throw new Error('Unexpected real network call in test: fetch');
+    };
+    global.fetch = stub;
+    try { globalThis.fetch = stub; } catch {}
+  } else {
     jest.spyOn(global, 'fetch').mockImplementation(() => {
       throw new Error('Unexpected real network call in test: fetch');
     });
+    try { globalThis.fetch = global.fetch; } catch {}
   }
   // Block XMLHttpRequest
   if (typeof global.XMLHttpRequest !== 'undefined') {
@@ -132,6 +151,15 @@ jest.mock('next/navigation', () => {
     usePathname: jest.fn(() => '/'),
     useSearchParams: jest.fn(() => new URLSearchParams()),
     redirect: jest.fn(),
+  };
+});
+
+// Mock PromptLayer tracking to no-op while allowing assertions in tests
+jest.mock('@/utils/promptlayer', () => {
+  const actual = jest.requireActual('@/utils/promptlayer');
+  return {
+    ...actual,
+    trackPromptRun: jest.fn().mockResolvedValue(undefined),
   };
 });
 
