@@ -3,11 +3,11 @@ import type { NextRequest } from 'next/server';
 
 export function middleware(request: NextRequest) {
   // Handle the dashboard redirect
-  if (request.nextUrl.pathname === '/dashboard') {
+  if (request.nextUrl.pathname === '/dashboard-v2') {
     return NextResponse.redirect(new URL('/fitness-program', request.url));
   }
 }
 
 export const config = {
-  matcher: '/dashboard'
+  matcher: ['/dashboard-v2']
 };

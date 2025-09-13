@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react';
 
 // Import all layouts that use context hooks
 import OnboardingLayout from '../../app/(onboarding)/layout';
-import DashboardLayout from '../../app/(dashboard)/layout';
+import DashboardLayout from '../../app/dashboard-v2/layout';
 
 // Import components that use context hooks
 import ProtectedRoute from '../../lib/v2/components/ProtectedRoute';

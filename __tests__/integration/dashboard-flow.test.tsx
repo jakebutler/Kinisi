@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { UserProvider } from '@/lib/v2/contexts/UserContext';
 import { UIProvider } from '@/lib/v2/contexts/UIContext';
-import DashboardPage from '@/app/(dashboard)/fitness-program/page';
+import DashboardPage from '@/app/dashboard-v2/fitness-program/page';
 import { supabase } from '@/utils/supabaseClient';
 
 // Mock the useDashboardData hook

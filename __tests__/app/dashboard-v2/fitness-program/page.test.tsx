@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import DashboardPage from '@/app/(dashboard)/fitness-program/page';
+import DashboardPage from '@/app/dashboard-v2/fitness-program/page';
 import { useUser } from '@/lib/v2/contexts/UserContext';
 import { useUI } from '@/lib/v2/contexts/UIContext';
 import { useDashboardData } from '@/lib/v2/hooks/useDashboardData';
@@ -24,7 +24,8 @@ describe('DashboardPage', () => {
   const mockUser = {
     id: 'test-user-id',
     email: 'test@example.com',
-    username: 'testuser'
+    username: 'testuser',
+    status: 'active' as const
   };
 
   const mockProgram = {
@@ -97,7 +98,7 @@ describe('DashboardPage', () => {
 
   it('renders welcome message with email when username not available', () => {
     mockUseUser.mockReturnValue({
-      user: { ...mockUser, username: undefined },
+      user: { ...mockUser, username: undefined, status: 'active' as const },
       userStatus: 'active',
       loading: false,
       setUser: jest.fn(),
