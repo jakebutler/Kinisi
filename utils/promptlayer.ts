@@ -1,6 +1,7 @@
 // Utility for fetching prompt content from PromptLayer registry via REST API
 // Caches prompt content in-memory for 10 minutes by default
 
+import 'server-only';
 const PROMPT_CACHE: Record<string, { content: string; expires: number }> = {};
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes
 
@@ -32,14 +33,19 @@ export async function fetchPromptFromRegistry(promptId: number): Promise<string>
 
   // Use the correct REST API endpoint with prompt_name
   const url = "https://api.promptlayer.com/rest/get-prompt-template";
+  const ac = new AbortController();
+  const timeoutMs = Number(process.env.PROMPTLAYER_FETCH_TIMEOUT_MS ?? 3000);
+  const t = setTimeout(() => ac.abort(), timeoutMs);
   const res = await fetch(url, {
     method: "POST",
     headers: {
       'X-API-KEY': apiKey,
       'Content-Type': 'application/json',
     },
-    body: JSON.stringify({ prompt_name: promptName })
+    body: JSON.stringify({ prompt_name: promptName }),
+    signal: ac.signal,
   });
+  clearTimeout(t);
 
   if (!res.ok) {
     const errText = await res.text();
@@ -49,7 +55,14 @@ export async function fetchPromptFromRegistry(promptId: number): Promise<string>
   const data = await res.json();
 
   // Extract content from the correct location in response structure
-  const content = data.prompt_template?.messages?.[0]?.prompt?.template || "";
+  const blocks = Array.isArray(data.prompt_template?.content) ? data.prompt_template.content : [];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const content = blocks
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .filter((b: any) => b && b.type === 'text')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    .map((b: any) => String(b.text ?? ''))
+    .join('');
 
   if (!content) {
     throw new Error(`No content found in prompt template '${promptName}'`);

@@ -125,6 +125,27 @@ git branch --merged main | grep -vE '(^\*|main|master)' | xargs -n 1 git branch 
 
 ---
 
+## Assessment Revision Model (Append-only)
+
+- **Model**
+  - Assessment revisions are append-only. A revision does not overwrite the prior assessment; instead, a new row is inserted into `assessments` with `revision_of` referencing the prior assessment’s `id`.
+  - This preserves full history and supports auditability and change tracking.
+
+- **API Routes**
+  - `POST /api/assessment` (generate):
+    - Inserts a new row into `survey_responses` for the submitted `surveyResponses` (history model).
+    - Generates an assessment and inserts a new `assessments` row with the new `survey_response_id`.
+  - `POST /api/assessment/feedback` (revise):
+    - If `revisionOfAssessmentId` is provided: inserts a new `assessments` row with `revision_of` set to that id; uses the linked or latest `survey_response_id`.
+    - If `surveyResponses` are supplied (and not revising): first inserts into `survey_responses` and uses that new id when inserting the new `assessments` row.
+    - Response shape: `{ assessment, assessmentId }`.
+
+- **Testing**
+  - Unit and API tests assert append-only behavior (a new row with `revision_of`) and verify that provided `surveyResponses` are persisted before inserting an assessment.
+  - All external calls (LLM, registry, network) are mocked; see `jest.setup.js` for global network blocking.
+
+---
+
 For any questions or to update automation, see this documentation or contact the repo maintainer.
 
 ---

@@ -44,6 +44,9 @@ describe('assessmentChain PromptLayer tracking', () => {
     expect(pl.trackPromptRun).toHaveBeenCalledTimes(1);
     const call = pl.trackPromptRun.mock.calls[0][0] as any;
     expect(call.promptName).toBe('Personalized Assessment');
+    // Assert survey inputVariables present and non-empty
+    expect(typeof call.inputVariables?.survey).toBe('string');
+    expect(call.inputVariables.survey.length).toBeGreaterThan(0);
     expect(call.tags).toEqual(expect.arrayContaining(['v2', 'assessment']));
     expect(call.tags).toEqual(expect.arrayContaining(['dev']));
     expect(call.metadata).toMatchObject({
@@ -79,5 +82,6 @@ describe('assessmentChain PromptLayer tracking', () => {
       model: 'gpt-3.5-turbo',
       temperature: 0.7,
     });
+    expect(call.metadata.usedRegistry).toBe(false);
   });
 });

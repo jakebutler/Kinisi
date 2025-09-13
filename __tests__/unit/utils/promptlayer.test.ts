@@ -34,8 +34,8 @@ describe('fetchPromptFromRegistry', () => {
       ok: true,
       json: async () => ({
         prompt_template: {
-          messages: [
-            { prompt: { template: PROMPT_TEMPLATE } }
+          content: [
+            { type: 'text', text: PROMPT_TEMPLATE }
           ]
         }
       })
@@ -71,7 +71,7 @@ describe('fetchPromptFromRegistry', () => {
   it('throws if response is missing template content', async () => {
     (globalAny.fetch as jest.Mock).mockResolvedValue({
       ok: true,
-      json: async () => ({ prompt_template: { messages: [{}] } })
+      json: async () => ({ prompt_template: { content: [{ type: 'image', text: '' }] } })
     });
     await expect(promptlayerModule.fetchPromptFromRegistry(PROMPT_ID)).rejects.toThrow('No content found in prompt template');
   });
@@ -82,8 +82,8 @@ describe('fetchPromptFromRegistry', () => {
       ok: true,
       json: async () => ({
         prompt_template: {
-          messages: [
-            { prompt: { template: PROMPT_TEMPLATE } }
+          content: [
+            { type: 'text', text: PROMPT_TEMPLATE }
           ]
         }
       })
