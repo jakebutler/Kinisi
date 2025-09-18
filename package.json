@@ -33,7 +33,7 @@
     "langchain": "^0.3.24",
     "lucide-react": "^0.542.0",
     "next": "15.4.7",
-    "openai": "^4.98.0",
+    "openai": "^5.21.0",
     "promptlayer": "^1.0.43",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
