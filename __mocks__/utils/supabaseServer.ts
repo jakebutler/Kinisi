@@ -1,5 +1,5 @@
-// ESM-compatible mock for supabaseClient
-// This mock matches the actual export structure of utils/supabaseClient.ts
+// ESM-compatible mock for supabaseServer
+// This mock matches the actual export structure of utils/supabaseServer.ts
 
 const createMockQueryBuilder = () => {
   const queryBuilder: any = {
@@ -49,19 +49,16 @@ const createMockQueryBuilder = () => {
   return queryBuilder;
 };
 
-const mockSupabase = {
+const mockSupabaseServer = {
   from: jest.fn(() => createMockQueryBuilder()),
   rpc: jest.fn().mockResolvedValue({ data: [], error: null }),
   auth: {
-    getSession: jest
-      .fn()
-      .mockResolvedValue({ data: { session: { access_token: 'test-access-token' } }, error: null }),
+    getSession: jest.fn().mockResolvedValue({ data: { session: { access_token: 'test-access-token' } }, error: null }),
     getUser: jest.fn().mockResolvedValue({ data: { user: null }, error: null }),
     signUp: jest.fn().mockResolvedValue({ data: null, error: null }),
     signInWithPassword: jest.fn().mockResolvedValue({ data: null, error: null }),
     signOut: jest.fn().mockResolvedValue({ error: null }),
     onAuthStateChange: jest.fn(() => ({ data: { subscription: { unsubscribe: jest.fn() } } })),
-    // Added for AuthContext flows
     exchangeCodeForSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
     verifyOtp: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
     setSession: jest.fn().mockResolvedValue({ data: { session: null }, error: null }),
@@ -90,7 +87,5 @@ const mockSupabase = {
   },
 };
 
-// Export the mock using the same name as the real module
-export const supabase = mockSupabase;
-// Default export for compatibility with any default imports
-export default mockSupabase;
+export const createSupabaseServerClient = jest.fn().mockResolvedValue(mockSupabaseServer);
+export default mockSupabaseServer;
