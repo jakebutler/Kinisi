@@ -6,6 +6,15 @@ const { TextEncoder, TextDecoder } = require('util');
 global.TextEncoder = TextEncoder;
 global.TextDecoder = TextDecoder;
 
+// Mock Next.js cookies API for server-side tests
+jest.mock('next/headers', () => ({
+  cookies: jest.fn(() => ({
+    get: jest.fn(() => ({ value: 'test-cookie-value' })),
+    set: jest.fn(),
+    remove: jest.fn(),
+  })),
+}));
+
 // Polyfill global Request and Response for Node.js test environment
 if (typeof global.Request === 'undefined') {
   const { Request } = require('node-fetch');
@@ -124,6 +133,7 @@ jest.mock('@/utils/programDataHelpers');
 // Mock environment variables for tests
 process.env.NEXT_PUBLIC_SUPABASE_URL = 'https://test.supabase.co';
 process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY = 'test-anon-key';
+process.env.SUPABASE_SERVICE_ROLE_KEY = 'test-service-role-key';
 process.env.PROMPTLAYER_API_KEY = 'test-promptlayer-key';
 
 // Global mocks for Next.js components if needed

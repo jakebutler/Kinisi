@@ -4,6 +4,8 @@ module.exports = {
     // Specific mappings first
     '^@/utils/supabaseClient$': '<rootDir>/__mocks__/utils/supabaseClient.ts',
     '^utils/supabaseClient$': '<rootDir>/__mocks__/utils/supabaseClient.ts',
+    '^@/utils/supabaseServer$': '<rootDir>/__mocks__/utils/supabaseServer.ts',
+    '^utils/supabaseServer$': '<rootDir>/__mocks__/utils/supabaseServer.ts',
     '^server-only$': '<rootDir>/__mocks__/server-only.js',
     '^@supabase/ssr$': '<rootDir>/__mocks__/supabase-ssr.js',
     // Generic alias last
