@@ -59,13 +59,8 @@ const validateExerciseProgram = (data: any): { isValid: boolean; errors: string[
 };
 
 // Type definitions
-export interface SurveyResponse {
-  selectedExercises: string[];
-  injuries: string;
-  sessionDuration: string;
-  confidenceLevel: number;
-  activityLikelihood: string;
-}
+import type { SurveyResponseForValidation as SurveyResponse } from '@/types/survey/unified';
+export type { SurveyResponseForValidation as SurveyResponse } from '@/types/survey/unified';
 
 export interface Assessment {
   id: string;

@@ -1,23 +1,24 @@
 import { useState } from 'react';
 import { supabase } from '@/utils/supabaseClient';
 import { ExerciseProgram } from '../types';
+import { SupabaseSession } from '@/types/supabase';
 
 export const useProgram = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const generateProgram = async (assessmentId: string, exerciseFilter: Record<string, any> = {}): Promise<ExerciseProgram | null> => {
+  const generateProgram = async (assessmentId: string, exerciseFilter: Record<string, unknown> = {}): Promise<ExerciseProgram | null> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       let accessToken: string | undefined;
       try {
         const { data: sess } = await supabase.auth.getSession();
         accessToken = sess?.session?.access_token;
       } catch {
-        const res: any = await (supabase.auth.getSession?.() ?? Promise.resolve({ data: { session: null } }));
-        accessToken = res?.data?.session?.access_token;
+        const { data: { session } } = await supabase.auth.getSession();
+        accessToken = session?.access_token;
       }
       const response = await fetch('/api/program/generate', {
         method: 'POST',
@@ -46,15 +47,15 @@ export const useProgram = () => {
   const approveProgram = async (programId: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       let accessToken: string | undefined;
       try {
         const { data: sess } = await supabase.auth.getSession();
         accessToken = sess?.session?.access_token;
       } catch {
-        const res: any = await (supabase.auth.getSession?.() ?? Promise.resolve({ data: { session: null } }));
-        accessToken = res?.data?.session?.access_token;
+        const { data: { session } } = await supabase.auth.getSession();
+        accessToken = session?.access_token;
       }
       const response = await fetch(`/api/program/approve`, {
         method: 'POST',
@@ -81,15 +82,15 @@ export const useProgram = () => {
   const requestProgramUpdate = async (programId: string, feedback: string): Promise<ExerciseProgram | null> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       let accessToken: string | undefined;
       try {
         const { data: sess } = await supabase.auth.getSession();
         accessToken = sess?.session?.access_token;
       } catch {
-        const res: any = await (supabase.auth.getSession?.() ?? Promise.resolve({ data: { session: null } }));
-        accessToken = res?.data?.session?.access_token;
+        const { data: { session } } = await supabase.auth.getSession();
+        accessToken = session?.access_token;
       }
       const response = await fetch(`/api/program/feedback`, {
         method: 'POST',
@@ -117,15 +118,15 @@ export const useProgram = () => {
   const scheduleProgram = async (programId: string, startDate: string): Promise<boolean> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       let accessToken: string | undefined;
       try {
         const { data: sess } = await supabase.auth.getSession();
         accessToken = sess?.session?.access_token;
       } catch {
-        const res: any = await (supabase.auth.getSession?.() ?? Promise.resolve({ data: { session: null } }));
-        accessToken = res?.data?.session?.access_token;
+        const { data: { session } } = await supabase.auth.getSession();
+        accessToken = session?.access_token;
       }
       const response = await fetch(`/api/program/${programId}/schedule`, {
         method: 'POST',

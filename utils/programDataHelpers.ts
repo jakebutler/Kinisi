@@ -1,11 +1,12 @@
 // utils/programDataHelpers.ts
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { Exercise } from "./types/programTypes";
+import { ProgramJson } from "@/types/fitness/Program";
+import { Exercise } from "@/utils/types/programTypes";
 
 // Save a new program to Supabase
 type NewProgram = {
   user_id: string;
-  program_json: any;
+  program_json: ProgramJson;
   status?: string;
 };
 export async function saveExerciseProgram(program: NewProgram, client?: SupabaseClient) {
@@ -58,19 +59,19 @@ export async function getProgramById(id: string, client?: SupabaseClient) {
   if (sessionsError) throw new Error(sessionsError.message);
 
   // 3. Fetch all session_exercises for these sessions
-  const sessionIds = sessions.map((s: any) => s.id);
-  let sessionExercises: any[] = [];
+  const sessionIds = sessions.map((s: { id: string }) => s.id);
+  let sessionExercises: Record<string, unknown>[] = [];
   if (sessionIds.length > 0) {
     const { data: exercises, error: exercisesError } = await c
       .from("session_exercises")
       .select("*")
       .in("session_id", sessionIds);
     if (exercisesError) throw new Error(exercisesError.message);
-    sessionExercises = exercises;
+    sessionExercises = exercises || [];
   }
 
   // 4. Attach session_exercises to their sessions
-  const sessionsWithExercises = sessions.map((session: any) => ({
+  const sessionsWithExercises = sessions.map((session: Record<string, unknown>) => ({
     ...session,
     session_exercises: sessionExercises.filter(se => se.session_id === session.id)
   }));
@@ -98,7 +99,13 @@ export async function saveProgramFeedback({
 }, client?: SupabaseClient) {
   const c = client;
   if (!c) throw new Error("Supabase client required");
-  const payload: Record<string, any> = {
+  const payload: {
+    program_id: string;
+    session_id?: string;
+    user_id: string;
+    feedback: string;
+    revision: number;
+  } = {
     program_id,
     session_id,
     user_id,
@@ -124,10 +131,10 @@ export async function approveProgram(id: string, client?: SupabaseClient) {
 }
 
 // Update a program's JSON (and optionally status)
-export async function updateProgramJson(id: string, program_json: any, status?: string, client?: SupabaseClient) {
+export async function updateProgramJson(id: string, program_json: ProgramJson, status?: string, client?: SupabaseClient) {
   const c = client;
   if (!c) throw new Error("Supabase client required");
-  const update: Record<string, any> = { program_json };
+  const update: Record<string, ProgramJson | string> = { program_json };
   if (status) update.status = status;
   const { data, error } = await c
     .from("exercise_programs")
@@ -142,8 +149,8 @@ export async function updateProgramJson(id: string, program_json: any, status?: 
 export async function updateProgramFields(
   id: string,
   fields: {
-    program_json?: any;
-    scheduling_preferences?: any;
+    program_json?: ProgramJson;
+    scheduling_preferences?: Record<string, unknown>;
     last_scheduled_at?: string; // ISO string
     status?: string;
   },
@@ -151,7 +158,7 @@ export async function updateProgramFields(
 ) {
   const c = client;
   if (!c) throw new Error("Supabase client required");
-  const update: Record<string, any> = {};
+  const update: Record<string, ProgramJson | Record<string, unknown> | string> = {};
   if (typeof fields.program_json !== 'undefined') update.program_json = fields.program_json;
   if (typeof fields.scheduling_preferences !== 'undefined') update.scheduling_preferences = fields.scheduling_preferences;
   if (typeof fields.last_scheduled_at !== 'undefined') update.last_scheduled_at = fields.last_scheduled_at;
@@ -188,7 +195,12 @@ export async function getAvailableExercises(filter?: {
   const { data, error } = await query;
   if (error) throw new Error(error.message);
   // Normalize DB fields (target_muscles/equipments) to unified Exercise shape
-  const normalized: Exercise[] = (data || []).map((row: any) => ({
+  const normalized: Exercise[] = (data || []).map((row: {
+    exercise_id: string;
+    name: string;
+    target_muscles: string[];
+    equipments: string[];
+  }) => ({
     exercise_id: row.exercise_id,
     name: row.name,
     primary_muscles: row.target_muscles,

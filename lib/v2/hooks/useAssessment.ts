@@ -1,15 +1,15 @@
 import { useState } from 'react';
-import { Assessment } from '../types';
+import { Assessment, SurveyData } from '../types';
 import { supabase } from '@/utils/supabaseClient';
 
 export const useAssessment = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const generateAssessment = async (surveyData: any): Promise<Assessment | null> => {
+  const generateAssessment = async (surveyData: SurveyData): Promise<Assessment | null> => {
     setLoading(true);
     setError(null);
-    
+
     try {
       let accessToken: string | undefined;
       try {
@@ -17,8 +17,8 @@ export const useAssessment = () => {
         accessToken = sess?.session?.access_token;
       } catch {
         // Fallback if getSession is undefined in certain test mocks
-        const res: any = await (supabase.auth.getSession?.() ?? Promise.resolve({ data: { session: null } }));
-        accessToken = res?.data?.session?.access_token;
+        const { data: { session } } = await supabase.auth.getSession();
+        accessToken = session?.access_token;
       }
       const response = await fetch('/api/assessment', {
         method: 'POST',
@@ -76,7 +76,7 @@ export const useAssessment = () => {
     assessmentId: string,
     feedback: string,
     currentAssessment?: string,
-    surveyResponses?: Record<string, any>
+    surveyResponses?: SurveyData
   ): Promise<Assessment | null> => {
     setLoading(true);
     setError(null);

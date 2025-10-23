@@ -26,42 +26,21 @@ export interface Assessment {
   created_at: string;
 }
 
-export interface ExerciseProgram {
-  id: string;
-  user_id: string;
-  status: string;
-  program_json: any;
-  created_at: string;
-  updated_at: string;
-  last_scheduled_at?: string;
-  scheduling_preferences?: any;
-  approved?: boolean;
-  weeks?: ProgramWeek[];
-}
+// Import enhanced program types
+export type {
+  ExerciseProgram,
+  ProgramStatus,
+  ProgramJson,
+  ProgramWeek,
+  ProgramSession,
+  ProgramExercise,
+  ProgramMetadata,
+  SchedulingPreferences,
+  ProgramResponse,
+  LegacyProgramWeek,
+  LegacyProgramExercise
+} from '@/types/fitness/Program';
 
-export interface ProgramWeek {
-  weekNumber: number;
-  goal: string;
-  sessions: ProgramSession[];
-}
-
-export interface ProgramSession {
-  id: string;
-  name: string;
-  goal: string;
-  exercises: Exercise[];
-}
-
-export interface Exercise {
-  id: string;
-  name: string;
-  sets: number;
-  reps?: string;
-  duration?: string;
-  targetMuscles: string[];
-  secondaryMuscles?: string[];
-  instructions: string;
-}
 
 // UI State Types
 export interface UIState {
