@@ -23,15 +23,15 @@ export const createAdvancedSupabaseMock = (overrides: any = {}) => {
     const query: any = {};
 
     // Ensure all methods return the same query instance for chaining
-    query.select = jest.fn().mockImplementation(() => query);
-    query.eq = jest.fn().mockImplementation(() => query);
-    query.order = jest.fn().mockImplementation(() => query);
-    query.limit = jest.fn().mockImplementation(() => query);
+    query.select = jest.fn(() => query);
+    query.eq = jest.fn(() => query);
+    query.order = jest.fn(() => query);
+    query.limit = jest.fn(() => query);
     query.single = jest.fn().mockResolvedValue({ data: mockData, error: null });
     query.maybeSingle = jest.fn().mockResolvedValue({ data: mockData, error: null });
-    query.insert = jest.fn().mockImplementation(() => query);
-    query.update = jest.fn().mockImplementation(() => query);
-    query.delete = jest.fn().mockImplementation(() => query);
+    query.insert = jest.fn(() => query);
+    query.update = jest.fn(() => query);
+    query.delete = jest.fn(() => query);
 
     return query;
   };
@@ -180,24 +180,11 @@ export const simulateAuthChange = (event: string, session: any, supabaseMock?: a
 
   if (callback && typeof callback === 'function') {
     try {
-      // Simulate async behavior without setTimeout to avoid emittery issues
-      setImmediate(() => {
-        try {
-          callback(event, session);
-          console.log(`🔄 Simulated auth change: ${event}`);
-        } catch (error) {
-          console.error('❌ Error in auth change callback:', error);
-        }
-      });
+      // Direct synchronous callback to avoid emittery issues
+      callback(event, session);
+      console.log(`🔄 Simulated auth change: ${event}`);
     } catch (error) {
-      console.error('❌ Error scheduling auth change:', error);
-      // Fallback: call synchronously
-      try {
-        callback(event, session);
-        console.log(`🔄 Simulated auth change (sync): ${event}`);
-      } catch (syncError) {
-        console.error('❌ Error in sync auth change:', syncError);
-      }
+      console.error('❌ Error in auth change callback:', error);
     }
   } else {
     console.warn('⚠️ No auth callback registered to simulate');
