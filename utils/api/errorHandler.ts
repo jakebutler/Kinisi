@@ -64,6 +64,15 @@ export const ApiErrors = {
  */
 export function createErrorResponse(error: ApiError | Error | string): NextResponse {
   if (typeof error === 'string') {
+    // Check for authentication errors in string messages
+    if (error.toLowerCase().includes('unauthorized') || error.toLowerCase().includes('no user found')) {
+      const apiError = ApiErrors.unauthorized(error);
+      return NextResponse.json({
+        error: apiError.message,
+        code: apiError.code
+      }, { status: apiError.status });
+    }
+
     const apiError = ApiErrors.serverError(error);
     return NextResponse.json({
       error: apiError.message,
@@ -72,6 +81,15 @@ export function createErrorResponse(error: ApiError | Error | string): NextRespo
   }
 
   if (error instanceof Error) {
+    // Check for authentication errors in Error messages
+    if (error.message.toLowerCase().includes('unauthorized') || error.message.toLowerCase().includes('no user found')) {
+      const apiError = ApiErrors.unauthorized(error.message);
+      return NextResponse.json({
+        error: apiError.message,
+        code: apiError.code
+      }, { status: apiError.status });
+    }
+
     const apiError = ApiErrors.serverError(error.message);
     return NextResponse.json({
       error: apiError.message,

@@ -76,11 +76,11 @@ describe('API Authentication Integration', () => {
         }));
 
         const response = await routeHandler(request);
-        
+
         expect(response.status).toBe(401);
-        
+
         const data = await response.json();
-        expect(data.error).toBe('Unauthorized');
+        expect(data.error).toMatch(/unauthorized/i); // Match any auth error message
       });
     });
   });
