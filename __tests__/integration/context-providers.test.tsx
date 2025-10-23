@@ -92,11 +92,7 @@ describe('Context Provider Integration - Advanced Test Automator Solution', () =
       throw new Error('Supabase mock validation failed after authentication setup');
     }
 
-    // Additional validation using legacy helper
-    const legacyValid = legacyValidateSupabaseMock();
-    if (!legacyValid) {
-      console.warn('⚠️ Legacy validation failed, but continuing with advanced mock');
-    }
+    // Legacy validation removed - using advanced mock system only
 
     return mockUser;
   };

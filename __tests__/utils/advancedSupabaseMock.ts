@@ -179,9 +179,26 @@ export const simulateAuthChange = (event: string, session: any, supabaseMock?: a
   const callback = (mock as any)?._authChangeCallback;
 
   if (callback && typeof callback === 'function') {
-    // Simulate async behavior
-    setTimeout(() => callback(event, session), 0);
-    console.log(`🔄 Simulated auth change: ${event}`);
+    try {
+      // Simulate async behavior without setTimeout to avoid emittery issues
+      setImmediate(() => {
+        try {
+          callback(event, session);
+          console.log(`🔄 Simulated auth change: ${event}`);
+        } catch (error) {
+          console.error('❌ Error in auth change callback:', error);
+        }
+      });
+    } catch (error) {
+      console.error('❌ Error scheduling auth change:', error);
+      // Fallback: call synchronously
+      try {
+        callback(event, session);
+        console.log(`🔄 Simulated auth change (sync): ${event}`);
+      } catch (syncError) {
+        console.error('❌ Error in sync auth change:', syncError);
+      }
+    }
   } else {
     console.warn('⚠️ No auth callback registered to simulate');
   }
