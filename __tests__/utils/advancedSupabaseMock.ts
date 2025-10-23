@@ -23,15 +23,15 @@ export const createAdvancedSupabaseMock = (overrides: any = {}) => {
     const query: any = {};
 
     // Ensure all methods return the same query instance for chaining
-    query.select = jest.fn().mockImplementation(() => query);
-    query.eq = jest.fn().mockImplementation(() => query);
-    query.order = jest.fn().mockImplementation(() => query);
-    query.limit = jest.fn().mockImplementation(() => query);
+    query.select = jest.fn(() => query);
+    query.eq = jest.fn(() => query);
+    query.order = jest.fn(() => query);
+    query.limit = jest.fn(() => query);
     query.single = jest.fn().mockResolvedValue({ data: mockData, error: null });
     query.maybeSingle = jest.fn().mockResolvedValue({ data: mockData, error: null });
-    query.insert = jest.fn().mockImplementation(() => query);
-    query.update = jest.fn().mockImplementation(() => query);
-    query.delete = jest.fn().mockImplementation(() => query);
+    query.insert = jest.fn(() => query);
+    query.update = jest.fn(() => query);
+    query.delete = jest.fn(() => query);
 
     return query;
   };
@@ -179,9 +179,13 @@ export const simulateAuthChange = (event: string, session: any, supabaseMock?: a
   const callback = (mock as any)?._authChangeCallback;
 
   if (callback && typeof callback === 'function') {
-    // Simulate async behavior
-    setTimeout(() => callback(event, session), 0);
-    console.log(`🔄 Simulated auth change: ${event}`);
+    try {
+      // Direct synchronous callback to avoid emittery issues
+      callback(event, session);
+      console.log(`🔄 Simulated auth change: ${event}`);
+    } catch (error) {
+      console.error('❌ Error in auth change callback:', error);
+    }
   } else {
     console.warn('⚠️ No auth callback registered to simulate');
   }

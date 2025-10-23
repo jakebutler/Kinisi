@@ -36,8 +36,7 @@ import {
   supabaseMockFactory
 } from '../utils/advancedSupabaseMock';
 
-// Import validation utilities for debugging
-import { validateSupabaseMock as legacyValidateSupabaseMock } from '../utils/supabaseTestHelpers';
+// Removed legacy validation utilities - using advanced mock system
 
 describe('Context Provider Integration - Advanced Test Automator Solution', () => {
   const TestChild = () => <div data-testid="test-child">Test Content</div>;
@@ -48,13 +47,19 @@ describe('Context Provider Integration - Advanced Test Automator Solution', () =
   });
 
   beforeEach(() => {
-    // Use advanced reset utility for complete test isolation
+    // Re-initialize the advanced mock for every test to ensure structure
+    const { supabase, default: defaultMock } = supabaseMockFactory.scenarios.anonymous();
+
+    // Replace module mocks for both named and default imports
+    jest.doMock('@/utils/supabaseClient', () => ({
+      supabase,
+      default: defaultMock,
+    }));
+
     resetSupabaseMock();
 
-    // Reset all other mocks
     jest.clearAllMocks();
 
-    // Validate mock state before each test
     const isValid = validateSupabaseMock();
     if (!isValid) {
       throw new Error('Supabase mock validation failed in beforeEach');
@@ -87,11 +92,7 @@ describe('Context Provider Integration - Advanced Test Automator Solution', () =
       throw new Error('Supabase mock validation failed after authentication setup');
     }
 
-    // Additional validation using legacy helper
-    const legacyValid = legacyValidateSupabaseMock();
-    if (!legacyValid) {
-      console.warn('⚠️ Legacy validation failed, but continuing with advanced mock');
-    }
+    // Legacy validation removed - using advanced mock system only
 
     return mockUser;
   };
