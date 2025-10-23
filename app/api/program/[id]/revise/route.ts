@@ -3,7 +3,8 @@ export const dynamic = 'force-dynamic';
 import { NextRequest, NextResponse } from "next/server";
 import { getProgramById, getAvailableExercises, updateProgramJson } from "@/utils/programDataHelpers";
 import { buildProgramRevisionPrompt } from "@/utils/programPromptTemplate";
-import { Exercise, ExerciseProgramPayload } from "@/utils/types/programTypes";
+import { ProgramJson } from "@/types/fitness/Program";
+import { ExerciseProgramPayload, Exercise } from "@/utils/types/programTypes";
 import { callLLMWithPrompt } from "@/utils/llm";
 import { createSupabaseServerClient } from "@/utils/supabaseServer";
 
@@ -95,10 +96,31 @@ export async function POST(req: NextRequest, { params }: { params: Promise<{ id:
       return NextResponse.json({ error: validation.error || "Invalid LLM output" }, { status: 422 });
     }
 
+    // Convert ExerciseProgramPayload to ProgramJson format
+    const programJson: ProgramJson = {
+      weeks: revised.weeks.map((week: any) => ({
+        weekNumber: week.week,
+        goal: week.sessions[0]?.goal || `Week ${week.week}`,
+        sessions: week.sessions.map((session: any) => ({
+          id: session.uid,
+          name: session.session.toString(),
+          goal: session.goal,
+          exercises: session.exercises.map((exercise: any) => ({
+            id: exercise.exercise_id,
+            name: exercise.exercise_id, // Use exercise_id as name since it's all we have
+            sets: exercise.sets,
+            reps: exercise.reps?.toString(),
+            targetMuscles: [], // Would need to fetch from exercise data
+            instructions: exercise.notes || ''
+          }))
+        }))
+      }))
+    };
+
     // Save update (set status back to draft for approval flow)
     let updated;
     try {
-      updated = await updateProgramJson(id, revised, "draft", supabase);
+      updated = await updateProgramJson(id, programJson, "draft", supabase);
     } catch (e: unknown) {
       console.error('Failed to save revised program:', e);
       return NextResponse.json({ error: "Failed to save revised program" }, { status: 500 });

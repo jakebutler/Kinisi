@@ -175,8 +175,20 @@ SURVEY ANSWERS:\n{{survey}}`;
     });
   }
 
-  // Run the chain
-  const assessment = await chain.invoke({ survey: augmentedSurvey });
+  // Run the chain with quota error handling
+  let assessment: string;
+  try {
+    assessment = await chain.invoke({ survey: augmentedSurvey });
+  } catch (error: any) {
+    // Check if it's a quota error
+    if (error.message?.includes('InsufficientQuotaError') || error.message?.includes('429')) {
+      console.warn("[assessment] OpenAI quota exceeded, using fallback assessment");
+      // Generate a basic assessment without LLM
+      assessment = generateFallbackAssessment(surveyResponses);
+    } else {
+      throw error; // Re-throw other errors
+    }
+  }
   return assessment.trim();
 }
 
@@ -263,11 +275,103 @@ CURRENT ASSESSMENT:\n{{assessment}}\n\nFEEDBACK:\n{{feedback}}\n\nSURVEY ANSWERS
     });
   }
 
-  // Run the chain
-  const revised = await chain.invoke({
-    assessment: currentAssessment,
-    feedback,
-    survey: surveyText
-  });
+  // Run the chain with quota error handling
+  let revised: string;
+  try {
+    revised = await chain.invoke({
+      assessment: currentAssessment,
+      feedback,
+      survey: surveyText
+    });
+  } catch (error: any) {
+    // Check if it's a quota error
+    if (error.message?.includes('InsufficientQuotaError') || error.message?.includes('429')) {
+      console.warn("[assessment revision] OpenAI quota exceeded, using fallback revision");
+      // Generate a basic revision without LLM
+      revised = generateFallbackRevision(currentAssessment, feedback, surveyResponses);
+    } else {
+      throw error; // Re-throw other errors
+    }
+  }
   return revised.trim();
+}
+
+// Fallback assessment generator for when OpenAI quota is exceeded
+function generateFallbackAssessment(survey: Record<string, any>): string {
+  const goal = survey.primaryGoal || 'general fitness improvement';
+  const frequency = survey.activityFrequency || 'current activity level';
+  const physicalFunctionRating = survey.physicalFunction || 'current physical abilities';
+  const confidence = survey.confidence || 'moderate confidence';
+  const importance = survey.importance || 'moderate importance';
+
+  const hasPain = survey.currentPain?.hasPain;
+  const painDescription = hasPain ? survey.currentPain?.description : '';
+
+  const activities = Array.isArray(survey.activityPreferences) ? survey.activityPreferences.join(', ') : 'various activities';
+  const equipment = Array.isArray(survey.equipmentAccess) ? survey.equipmentAccess.join(', ') : 'available equipment';
+
+  let assessment = `## Initial Assessment
+
+**Current Status & Goals**
+Based on your survey responses, your primary goal is ${goal}. You're currently active ${frequency.toLowerCase()} and rate your physical function as ${physicalFunctionRating.toLowerCase()}. Your confidence level is ${confidence}/10 and you rate this goal as ${importance}/10 in importance.
+
+`;
+
+  if (hasPain && painDescription) {
+    assessment += `**Health Considerations**
+You reported current pain or injury: ${painDescription}. This will be taken into account in your program design.
+
+`;
+  }
+
+  assessment += `**Focus Areas for Next 4-6 Weeks**
+1. **Progressive Overload**: Gradually increase intensity while maintaining proper form
+2. **Consistency**: Establish a sustainable routine that works with your schedule
+3. **Movement Quality**: Focus on proper technique before increasing intensity
+
+**Recommended Next Steps**
+1. Begin with 2-3 sessions per week focusing on fundamental movement patterns
+2. Gradually progress to ${survey.timeCommitment?.daysPerWeek || 3-4} days per week as tolerated
+3. Include activities you enjoy: ${activities}
+4. Utilize available equipment: ${equipment}
+
+**Timeline Expectations**
+With consistent effort, you should start noticing improvements in energy levels and movement quality within 2-3 weeks, with more significant changes in 6-8 weeks.
+
+*This assessment was generated based on your survey responses. For a more personalized assessment, you may want to consult with a qualified fitness professional.*`;
+
+  return assessment;
+}
+
+// Fallback revision generator for when OpenAI quota is exceeded
+function generateFallbackRevision(currentAssessment: string, feedback: string, survey: Record<string, any>): string {
+  const timestamp = new Date().toLocaleDateString();
+
+  let revision = `## Updated Assessment (${timestamp})
+
+**Previous Assessment Summary**
+${currentAssessment.split('\n').slice(0, 10).join('\n')}...
+
+**Revisions Based on Your Feedback**
+Thank you for the feedback: "${feedback}". I've updated your assessment to better address your needs.
+
+**Updated Focus Areas**
+1. **Address Your Feedback**: Incorporating your specific concerns and preferences
+2. **Personalized Approach**: Tailoring the program more specifically to your situation
+3. **Practical Implementation**: Ensuring recommendations are actionable for your lifestyle
+
+**Refined Recommendations**
+- Continue with the foundational approach from the original assessment
+- Adjust exercises and intensity based on your feedback
+- Focus more on ${survey.activityPreferences?.join(', ') || 'activities you enjoy'}
+- Work within your time constraints: ${survey.timeCommitment?.minutesPerSession || '30-45'} minutes per session
+
+**Next Steps**
+1. Start with the revised approach at a comfortable intensity
+2. Monitor your response and adjust as needed
+3. Provide additional feedback as you progress
+
+*This revision was generated based on your feedback. For optimal results, consider working with a qualified fitness professional who can provide ongoing personalized guidance.*`;
+
+  return revision;
 }

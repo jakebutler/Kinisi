@@ -4,6 +4,8 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User, UserStatus } from '../types';
 import { supabase } from '@/utils/supabaseClient';
 import { hasCompletedOnboarding } from '@/utils/userFlow';
+import { SupabaseSession } from '@/types/supabase';
+import type { AuthChangeEvent, Session } from '@supabase/supabase-js';
 
 interface UserContextType {
   user: User | null;
@@ -25,43 +27,50 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
   useEffect(() => {
     // Get initial session
     const getInitialSession = async () => {
-      const result = await supabase.auth.getSession?.();
-      const session = result && (result as any).data ? (result as any).data.session : null;
-      if (session?.user) {
-        // Determine user status based on onboarding completion
-        const onboardingCompleted = await hasCompletedOnboarding(session.user.id);
-        const userStatus: UserStatus = onboardingCompleted ? 'active' : 'onboarding';
-        
-        const userData = {
-          id: session.user.id,
-          email: session.user.email || '',
-          username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
-          status: userStatus
-        };
-        setUser(userData);
-        setUserStatus(userStatus);
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) throw error;
+        const session = data.session;
+
+        if (session?.user) {
+          // Determine user status based on onboarding completion
+          const onboardingCompleted = await hasCompletedOnboarding(session.user.id);
+          const status: UserStatus = onboardingCompleted ? 'active' : 'onboarding';
+
+          const userData = {
+            id: session.user.id,
+            email: session.user.email || '',
+            username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
+            status
+          };
+          setUser(userData);
+          setUserStatus(status);
+        }
+      } catch (error) {
+        console.error('Error getting initial session:', error);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
     };
 
     getInitialSession();
 
     // Listen for auth changes
-    const onAuth = supabase.auth.onAuthStateChange?.(
-      async (event: any, session: any) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event: AuthChangeEvent, session: Session | null) => {
         if (session?.user) {
           // Determine user status based on onboarding completion
           const onboardingCompleted = await hasCompletedOnboarding(session.user.id);
-          const userStatus: UserStatus = onboardingCompleted ? 'active' : 'onboarding';
-          
+          const status: UserStatus = onboardingCompleted ? 'active' : 'onboarding';
+
           const userData = {
             id: session.user.id,
             email: session.user.email || '',
             username: session.user.user_metadata?.username || session.user.email?.split('@')[0],
-            status: userStatus
+            status
           };
           setUser(userData);
-          setUserStatus(userStatus);
+          setUserStatus(status);
         } else {
           setUser(null);
           setUserStatus('onboarding');
@@ -69,8 +78,6 @@ export const UserProvider: React.FC<{ children: React.ReactNode }> = ({ children
         setLoading(false);
       }
     );
-
-    const subscription = (onAuth && (onAuth as any).data && (onAuth as any).data.subscription) || { unsubscribe: () => {} };
 
     return () => subscription.unsubscribe();
   }, []);

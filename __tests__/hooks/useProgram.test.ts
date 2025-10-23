@@ -5,9 +5,27 @@ import { useProgram } from '@/lib/v2/hooks/useProgram';
 const mockFetch = jest.fn();
 global.fetch = mockFetch;
 
+// Mock Supabase client with fallback structure to match hook's try/catch pattern
+jest.mock('@/utils/supabaseClient', () => ({
+  supabase: {
+    auth: {
+      getSession: jest.fn().mockResolvedValue({
+        data: { session: { access_token: 'test-token' } }
+      })
+    }
+  }
+}));
+
 describe('useProgram', () => {
   beforeEach(() => {
     mockFetch.mockClear();
+    jest.clearAllMocks();
+
+    // Reset Supabase mock - we need to get the mocked module
+    const { supabase } = require('@/utils/supabaseClient');
+    supabase.auth.getSession.mockResolvedValue({
+      data: { session: { access_token: 'test-token' } }
+    });
   });
 
   describe('generateProgram', () => {
@@ -35,6 +53,7 @@ describe('useProgram', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer test-token',
         },
         body: JSON.stringify({ assessmentId: 'test-assessment-id' }),
       });
@@ -93,6 +112,7 @@ describe('useProgram', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer test-token',
         },
         body: JSON.stringify({ programId: 'test-program-id' }),
       });
@@ -146,6 +166,7 @@ describe('useProgram', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer test-token',
         },
         body: JSON.stringify({ programId: 'test-program-id', feedback: 'Please update' }),
       });
@@ -192,6 +213,7 @@ describe('useProgram', () => {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          'Authorization': 'Bearer test-token',
         },
         body: JSON.stringify({ startDate: '2024-12-25' }),
       });

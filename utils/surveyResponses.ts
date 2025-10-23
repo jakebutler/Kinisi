@@ -3,13 +3,7 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import { Database } from '../types/supabase';
 
 // Survey response TypeScript type (matches Supabase schema)
-export type SurveyResponse = {
-  id: string;
-  user_id: string;
-  response: any;
-  created_at: string;
-  updated_at: string;
-};
+export type { SurveyResponse } from '@/types/survey/unified';
 
 // Save or update survey response (auto-save)
 export async function upsertSurveyResponse(userId: string, response: any, client?: SupabaseClient) {

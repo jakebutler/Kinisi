@@ -46,10 +46,30 @@ describe('API: POST /api/program/[id]/revise', () => {
   const mockPrompt = 'REVISE_PROMPT';
   const mockLLMResponse = {
     weeks: [
-      { week: 1, sessions: [{ session: 1, goal: 'Strength', exercises: [{ exercise_id: 'pushup', sets: 4, reps: 10, notes: '' }] }] },
+      { week: 1, sessions: [{ session: 1, goal: 'Strength', uid: 'test-session-id', exercises: [{ exercise_id: 'pushup', sets: 4, reps: 10, notes: '' }] }] },
     ],
   };
-  const mockUpdated = { id: programId, status: 'draft', program_json: mockLLMResponse };
+  // The API converts ExerciseProgramPayload to ProgramJson format
+  const expectedProgramJson = {
+    weeks: mockLLMResponse.weeks.map((week: any) => ({
+      weekNumber: week.week,
+      goal: week.sessions[0]?.goal || `Week ${week.week}`,
+      sessions: week.sessions.map((session: any) => ({
+        id: session.uid || 'test-session-id',
+        name: session.session.toString(),
+        goal: session.goal,
+        exercises: session.exercises.map((exercise: any) => ({
+          id: exercise.exercise_id,
+          name: exercise.exercise_id,
+          sets: exercise.sets,
+          reps: exercise.reps?.toString(),
+          targetMuscles: [],
+          instructions: exercise.notes || ''
+        }))
+      }))
+    }))
+  };
+  const mockUpdated = { id: programId, status: 'draft', program_json: expectedProgramJson };
 
   beforeEach(() => {
     jest.clearAllMocks();
@@ -91,7 +111,7 @@ describe('API: POST /api/program/[id]/revise', () => {
     expect(buildProgramRevisionPrompt).toHaveBeenCalledWith(mockProgram.program_json, baseBody.feedback, mockExercises, undefined);
     expect(callLLMWithPrompt).toHaveBeenCalledWith(mockPrompt);
     expect(validateProgramOutput).toHaveBeenCalledWith(mockLLMResponse);
-    expect(updateProgramJson).toHaveBeenCalledWith(programId, mockLLMResponse, 'draft', expect.anything());
+    expect(updateProgramJson).toHaveBeenCalledWith(programId, expectedProgramJson, 'draft', expect.anything());
   });
 
   it('returns 400 when feedback is missing', async () => {

@@ -12,66 +12,66 @@ describe('IntakeSurvey', () => {
 
   it('renders the first question', () => {
     render(<IntakeSurvey onNext={mockOnNext} />);
-    
-    expect(screen.getByText('What is your top goal for being physically active?')).toBeInTheDocument();
-    expect(screen.getByText('1/13')).toBeInTheDocument();
+
+    expect(screen.getByText('Have you ever been told by a doctor that you should not exercise because of a medical condition?')).toBeInTheDocument();
+    expect(screen.getByText('Question 1 of 15')).toBeInTheDocument();
   });
 
   it('shows progress bar with correct initial progress', () => {
     render(<IntakeSurvey onNext={mockOnNext} />);
-    
-    // Check progress indicator shows 1/13
-    expect(screen.getByText('1/13')).toBeInTheDocument();
-    
-    // Check progress bar width (~7.7% for first question)
+
+    // Check progress indicator shows 1 of 15
+    expect(screen.getByText('Question 1 of 15')).toBeInTheDocument();
+
+    // Check progress bar width (~6.67% for first question: 1/15 * 100)
     const progressBarFill = document.querySelector('.bg-gradient-to-r');
-    expect(progressBarFill).toHaveStyle('width: 7.6923076923076925%');
+    expect(progressBarFill).toHaveStyle('width: 6.666666666666667%');
   });
 
-  it('allows selecting primary goal', async () => {
+  it('allows selecting medical clearance answer', async () => {
     const user = userEvent.setup();
     render(<IntakeSurvey onNext={mockOnNext} />);
-    
-    const improveHealthOption = screen.getByText('Improve health');
-    const loseWeightOption = screen.getByText('Lose weight');
-    
-    await user.click(improveHealthOption);
-    
-    // Check that button is selected (should have different styling)
-    expect(improveHealthOption.closest('button')).toHaveClass('border-blue-500');
-    
+
+    const noOption = screen.getByText('No');
+    const yesOption = screen.getByText('Yes');
+
+    await user.click(yesOption);
+
+    // Check that button is selected (should have brand-puce styling)
+    expect(yesOption.closest('button')).toHaveClass('border-[var(--brand-puce)]');
+
     // Should be able to change selection
-    await user.click(loseWeightOption);
-    expect(loseWeightOption.closest('button')).toHaveClass('border-blue-500');
-    expect(improveHealthOption.closest('button')).not.toHaveClass('border-blue-500');
+    await user.click(noOption);
+    expect(noOption.closest('button')).toHaveClass('border-[var(--brand-puce)]');
+    expect(yesOption.closest('button')).not.toHaveClass('border-[var(--brand-puce)]');
   });
 
   it('enables Continue button when question is answered', async () => {
     const user = userEvent.setup();
     render(<IntakeSurvey onNext={mockOnNext} />);
-    
-    const continueButton = screen.getByText('Continue');
+
+    const continueButton = screen.getByText('Next');
     expect(continueButton).toBeDisabled();
-    
-    const improveHealthOption = screen.getByText('Improve health');
-    await user.click(improveHealthOption);
-    
+
+    const noOption = screen.getByText('No');
+    await user.click(noOption);
+
     expect(continueButton).not.toBeDisabled();
   });
 
   it('navigates to next question when Continue is clicked', async () => {
     const user = userEvent.setup();
     render(<IntakeSurvey onNext={mockOnNext} />);
-    
+
     // Answer first question
-    const improveHealthOption = screen.getByText('Improve health');
-    await user.click(improveHealthOption);
-    
-    const continueButton = screen.getByText('Continue');
+    const noOption = screen.getByText('No');
+    await user.click(noOption);
+
+    const continueButton = screen.getByText('Next');
     await user.click(continueButton);
-    
-    expect(screen.getByText('2/13')).toBeInTheDocument();
-    expect(screen.getByText('Have you ever been told by a doctor that you should not exercise because of a medical condition?')).toBeInTheDocument();
+
+    expect(screen.getByText('Question 2 of 15')).toBeInTheDocument();
+    expect(screen.getByText('Do you currently experience pain or injury that limits your physical activity?')).toBeInTheDocument();
   });
 
   it('shows Back button on questions after the first', async () => {
@@ -105,22 +105,21 @@ describe('IntakeSurvey', () => {
   it('handles conditional pain description', async () => {
     const user = userEvent.setup();
     render(<IntakeSurvey onNext={mockOnNext} />);
-    
-    // Navigate to pain question (question 3)
-    // Q1: Primary goal
-    await user.click(screen.getByText('Improve health'));
-    await user.click(screen.getByText('Continue'));
-    
-    // Q2: Medical clearance
+
+    // Q1: Medical clearance - answer No
     await user.click(screen.getByText('No'));
-    await user.click(screen.getByText('Continue'));
-    
-    // Q3: Current pain - should show Yes/No options
+    await user.click(screen.getByText('Next'));
+
+    // Q2: Current pain - should show Yes/No options
     expect(screen.getByText('Do you currently experience pain or injury that limits your physical activity?')).toBeInTheDocument();
-    
-    // Select Yes - should show textarea
+
+    // Select Yes - should show textarea in the same question
     await user.click(screen.getByText('Yes'));
-    expect(screen.getByPlaceholderText('Please describe your pain or injury...')).toBeInTheDocument();
+    // Wait a moment for conditional field to appear
+    await user.click(screen.getByText('Next'));
+
+    // The conditional textarea should appear as a separate question
+    expect(screen.getByPlaceholderText('Please describe your pain or injury:')).toBeInTheDocument();
   });
 
   it('handles activity preferences with conditional other field', async () => {
