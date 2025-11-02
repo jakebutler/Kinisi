@@ -101,6 +101,7 @@ const SurveyContainer: React.FC<SurveyContainerProps> = ({
 
   const isCurrentQuestionValid = isQuestionAnswered(currentQuestion);
   const canProceed = !currentQuestion.required || isCurrentQuestionValid;
+  const canSubmitThisStep = isLastQuestion ? canSubmit : canProceed;
 
   return (
     <div className={`survey-container ${className}`}>
@@ -158,9 +159,9 @@ const SurveyContainer: React.FC<SurveyContainerProps> = ({
             <button
               type="button"
               onClick={handleNext}
-              disabled={!canProceed || submitting}
+              disabled={!canSubmitThisStep || submitting}
               className={`btn-primary transition ${
-                (!canProceed || submitting) ? 'opacity-50 cursor-not-allowed' : ''
+                (!canSubmitThisStep || submitting) ? 'opacity-50 cursor-not-allowed' : ''
               }`}
             >
               {submitting ? (

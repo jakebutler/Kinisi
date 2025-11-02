@@ -1,100 +1,35 @@
 "use client";
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { supabase } from "@/utils/supabaseClient";
-import { getPostLoginRedirect } from "@/utils/userFlow";
-import Link from "next/link";
-import dynamic from "next/dynamic";
+import AuthForm from "@/components/ui/AuthForm";
 
-function LoginPage() {
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
-  const router = useRouter();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  if (!mounted) return null;
-
-  const handleLogin = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
-    
-    const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-    
-    if (error) {
-      setError(error.message);
-      setLoading(false);
-    } else if (data.user) {
-      // Determine where to redirect the user
-      try {
-        const redirectPath = await getPostLoginRedirect(data.user.id);
-        router.push(redirectPath);
-      } catch (redirectError) {
-        console.error('Error determining redirect path:', redirectError);
-        // Fallback to dashboard if there's an error
-        router.push('/dashboard');
-      }
-      setLoading(false);
-    }
-  };
-
+export default function LoginPage() {
   return (
-    <div className="flex min-h-screen items-center justify-center" suppressHydrationWarning>
-      <form
-        className="w-full max-w-sm bg-white p-8 rounded shadow"
-        onSubmit={handleLogin}
-        aria-label="Login form"
-      >
-        <h1 className="text-2xl font-bold mb-4">Sign In</h1>
-        <label className="block mb-2" htmlFor="email">
-          Email
-          <input
-            id="email"
-            type="email"
-            className="mt-1 block w-full border rounded px-3 py-2"
-            value={email}
-            onChange={e => setEmail(e.target.value)}
-            required
-            autoComplete="email"
-          />
-        </label>
-        <label className="block mb-4" htmlFor="password">
-          Password
-          <input
-            id="password"
-            type="password"
-            className="mt-1 block w-full border rounded px-3 py-2"
-            value={password}
-            onChange={e => setPassword(e.target.value)}
-            required
-            autoComplete="current-password"
-          />
-        </label>
-        {error && <div className="mb-2 text-red-600">{error}</div>}
-        <button
-          type="submit"
-          className="w-full btn-primary disabled:opacity-50"
-          disabled={loading}
-        >
-          {loading ? "Signing in..." : "Sign In"}
-        </button>
-        <div className="flex justify-between mt-4 text-sm">
-          <Link href="/register" className="text-[var(--brand-puce)] hover:underline">
-            Register
-          </Link>
-          <Link href="/forgot-password" className="text-[var(--brand-puce)] hover:underline">
-            Forgot Password?
-          </Link>
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
+      <div className="max-w-md w-full space-y-8">
+        <div className="text-center">
+          <h2 className="mt-6 text-3xl font-extrabold text-gray-900">
+            Sign In
+          </h2>
+          <p className="mt-2 text-sm text-gray-600">
+            Sign in to your Kinisi account
+          </p>
         </div>
-      </form>
+
+        <AuthForm.Root>
+          <AuthForm.Header />
+          <AuthForm.Fields />
+          <AuthForm.SubmitButton />
+          <AuthForm.ToggleButton />
+        </AuthForm.Root>
+
+        <div className="text-center">
+          <p className="text-sm text-gray-600">
+            Don't have an account?{' '}
+            <a href="/register" className="font-medium text-indigo-600 hover:text-indigo-500">
+              Sign up
+            </a>
+          </p>
+        </div>
+      </div>
     </div>
   );
 }
-
-export default dynamic(() => Promise.resolve(LoginPage), { ssr: false });

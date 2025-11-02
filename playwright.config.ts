@@ -29,6 +29,7 @@ export default defineConfig({
     {
       name: 'e2e-auth',
       testMatch: [
+        /e2e\/(complete-onboarding-journey\.spec\.ts)$/,
         /e2e\/(survey.*\.spec\.ts)$/,
         /e2e\/(programSchedule\.spec\.ts)$/,
         /e2e\/(dashboardSchedule\.spec\.ts)$/,

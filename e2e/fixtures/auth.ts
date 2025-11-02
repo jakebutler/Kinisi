@@ -247,6 +247,47 @@ export const test = base.extend({
       await route.fulfill({ status: 200, contentType: 'application/json', body });
     });
 
+    // Mock register API to handle access code validation in E2E tests
+    await page.route('**/api/register', async (route) => {
+      console.log('[auth.fixture] intercept api register:', route.request().url());
+      const request = route.request();
+      const postData = await request.postDataJSON();
+      console.log('[auth.fixture] register request data:', postData);
+
+      // Validate access code - use environment variable if available, otherwise accept common test codes
+      const expectedAccessCode = process.env.E2E_ACCESS_CODE || process.env.ACCESS_CODE || 'test-access-code';
+      console.log('[auth.fixture] expected access code:', expectedAccessCode);
+
+      if (!postData.email || !postData.password || !postData.accessCode) {
+        console.log('[auth.fixture] validation failed: missing fields');
+        await route.fulfill({
+          status: 400,
+          contentType: 'application/json',
+          body: JSON.stringify({ error: 'Email, password, and access code are required.' })
+        });
+        return;
+      }
+
+      if (postData.accessCode !== expectedAccessCode) {
+        console.log('[auth.fixture] validation failed: invalid access code', postData.accessCode);
+        await route.fulfill({
+          status: 401,
+          contentType: 'application/json',
+          body: JSON.stringify({ error: 'Invalid access code.' })
+        });
+        return;
+      }
+
+      // Success response - in E2E environment, include redirect URL
+      const responseBody = JSON.stringify({ success: true, redirectTo: '/survey' });
+      console.log('[auth.fixture] sending success response:', responseBody);
+      await route.fulfill({
+        status: 200,
+        contentType: 'application/json',
+        body: responseBody
+      });
+    });
+
     // Mock Next.js API routes used on dashboard
     await page.route((url) => /\/api\/program\/create$/.test(new URL(url.toString(), 'http://localhost').pathname), async (route) => {
       if (process.env.DEBUG_E2E_AUTH) console.log('[auth.fixture] intercept api create:', route.request().url());
