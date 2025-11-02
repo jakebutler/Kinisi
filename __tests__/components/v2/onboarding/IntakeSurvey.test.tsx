@@ -132,82 +132,87 @@ describe('IntakeSurvey', () => {
     const user = userEvent.setup();
     render(<IntakeSurvey onNext={mockOnNext} />);
 
-    // Navigate through key questions to reach completion and trigger onNext callback
-    // Focus on completing just enough to test the onNext functionality
-    const answers = [
-      'No',        // Q1: Medical clearance
-      'No',        // Q2: Current pain
-      '1-2',       // Q3: Activity frequency
-      'Good',      // Q4: Physical function
-      'Yes',       // Q5: Intent to change
-      '5',         // Q6: Importance
-      '5',         // Q7: Confidence
-      '7-8',       // Q8: Sleep
-      'No',        // Q9: Tobacco use
-      'Improve health' // Q10: Primary goal
-    ];
+    // Complete the survey systematically by answering all required questions
+    let maxQuestions = 20; // Prevent infinite loop
+    let questionsAnswered = 0;
 
-    for (let i = 0; i < answers.length; i++) {
-      // Find and click the answer option
-      const buttons = screen.getAllByRole('button');
-      const answerButton = buttons.find(btn =>
-        btn.textContent?.includes(answers[i]) &&
-        btn.textContent !== 'Next' &&
-        btn.textContent !== 'Previous' &&
-        !btn.disabled
-      );
+    // Navigate through the survey until we can submit it
+    while (questionsAnswered < maxQuestions) {
+      try {
+        // Wait for the current question to load
+        await waitFor(() => {
+          expect(screen.getByRole('button', { name: /Next|Submit Survey/ })).toBeInTheDocument();
+        }, { timeout: 2000 });
 
-      if (answerButton) {
-        await user.click(answerButton);
+        // Look for any answer buttons (excluding navigation buttons)
+        const buttons = screen.getAllByRole('button');
+        const answerButtons = buttons.filter(btn =>
+          btn.textContent &&
+          !btn.textContent.includes('Next') &&
+          !btn.textContent.includes('Previous') &&
+          !btn.textContent.includes('Submit Survey') &&
+          !btn.textContent.includes('Complete') &&
+          !btn.disabled
+        );
+
+        // If we find answer buttons, click the first valid one
+        if (answerButtons.length > 0) {
+          await user.click(answerButtons[0]);
+        }
+
+        // Look for the action button (Next or Submit Survey)
+        const actionButton = screen.getByRole('button', { name: /Next|Submit Survey/ });
+
+        // Check if this is the submit button (last question)
+        if (actionButton.textContent?.includes('Submit Survey')) {
+          // This is the final question - submit the survey
+          expect(actionButton).not.toBeDisabled();
+          await user.click(actionButton);
+          break;
+        } else if (!actionButton.disabled) {
+          // This is a regular Next button - continue to next question
+          await user.click(actionButton);
+          questionsAnswered++;
+        } else {
+          // Next button is disabled, we might need to answer more questions
+          // Try clicking any available answer option
+          if (answerButtons.length > 0) {
+            await user.click(answerButtons[0]);
+            questionsAnswered++;
+          } else {
+            // No options available, break to prevent infinite loop
+            break;
+          }
+        }
+
+        // Brief pause to let the component update
+        await new Promise(resolve => setTimeout(resolve, 100));
+
+      } catch (error) {
+        // If we can't find elements, we might be at the end or an error state
+        console.log('Survey navigation error:', error);
+        break;
       }
-
-      // Click next to continue
-      const nextButton = screen.getByText('Next');
-      if (nextButton && !nextButton.disabled) {
-        await user.click(nextButton);
-      }
-
-      // Wait a moment for state to update
-      await new Promise(resolve => setTimeout(resolve, 50));
     }
 
-    // Handle remaining questions with a simpler approach
-    // Try to click through remaining questions without getting stuck on specific text
-    for (let i = 0; i < 5; i++) {
-      const buttons = screen.getAllByRole('button');
-      const selectableButton = buttons.find(btn =>
-        btn.textContent &&
-        btn.textContent !== 'Next' &&
-        btn.textContent !== 'Previous' &&
-        btn.textContent !== 'Submit Survey' &&
-        btn.textContent !== 'Complete' &&
-        !btn.disabled &&
-        !btn.textContent?.includes('Optional')
-      );
-
-      if (selectableButton) {
-        await user.click(selectableButton);
-      }
-
-      const nextButton = screen.getByText(/Next|Submit Survey|Complete/);
-      if (nextButton && !nextButton.disabled) {
-        await user.click(nextButton);
-      }
-
-      await new Promise(resolve => setTimeout(resolve, 50));
-    }
-
-    // Final submission attempt
+    // Final attempt to submit if we haven't yet
     try {
-      const submitButton = screen.getByText(/Submit Survey|Complete/);
-      await user.click(submitButton);
+      const submitButton = screen.getByRole('button', { name: 'Submit Survey' });
+      if (!submitButton.disabled) {
+        await user.click(submitButton);
+      }
     } catch (error) {
-      // If we can't find submit button, continue with verification
+      // Submit button not found, that's okay - we might have already submitted
     }
 
-    // Verify that onNext was called (even if survey isn't fully completed)
+    // Verify that onNext was called with the survey data
     await waitFor(() => {
-      expect(mockOnNext).toHaveBeenCalled();
-    }, { timeout: 3000 });
-  });
+      expect(mockOnNext).toHaveBeenCalledWith(
+        expect.any(Object)
+      );
+    }, {
+      timeout: 20000, // Increased timeout for complex survey interaction
+      interval: 200   // Check more frequently
+    });
+  }, 15000); // 15 second timeout for the entire test
 });

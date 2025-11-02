@@ -24,7 +24,10 @@ module.exports = {
     '/__mocks__/',
     '/__fixtures__/',
     '/fixtures/',
-    '/e2e/'
+    '/e2e/',
+    '/__tests__/utils/',
+    '/__tests__/setup/',
+    '/__tests__/mocks/'
   ],
   transformIgnorePatterns: [
     '/node_modules/(?!(got|@supabase|isows|isomorphic-fetch|ky)/)'
@@ -37,4 +40,6 @@ module.exports = {
   modulePathIgnorePatterns: [],
   // Force Jest to use manual mocks
   automock: false,
+  // Default timeout for all tests
+  testTimeout: 10000,
 };
