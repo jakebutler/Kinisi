@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './fixtures/auth';
 
 test.describe('Complete Onboarding Journey', () => {
   test.beforeEach(async ({ page }) => {
@@ -8,9 +8,10 @@ test.describe('Complete Onboarding Journey', () => {
 
   test('should complete full onboarding flow from registration to active dashboard', async ({ page }) => {
     // Step 1: Register new user
-    await page.click('text=Sign up');
+    await page.goto('/register');
     await page.fill('[data-testid="email-input"]', 'test@example.com');
     await page.fill('[data-testid="password-input"]', 'TestPassword123!');
+    await page.fill('[data-testid="access-code-input"]', 'maskini');
     await page.click('[data-testid="register-button"]');
 
     // Wait for email confirmation (in test environment, this should be automatic)
