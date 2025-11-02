@@ -1,0 +1,53 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - link "Skip to main content" [ref=e2] [cursor=pointer]:
+    - /url: "#main-content"
+  - navigation [ref=e3]:
+    - generic [ref=e4]:
+      - link "Kinisi" [ref=e5] [cursor=pointer]:
+        - /url: /
+      - generic [ref=e6]:
+        - link "Features" [ref=e7] [cursor=pointer]:
+          - /url: /#features
+        - link "How it works" [ref=e8] [cursor=pointer]:
+          - /url: /#how-it-works
+        - link "Beta access" [ref=e9] [cursor=pointer]:
+          - /url: /#beta
+        - link "Sign in" [ref=e10] [cursor=pointer]:
+          - /url: /login
+        - link "Sign up" [ref=e11] [cursor=pointer]:
+          - /url: /register
+  - main [ref=e12]:
+    - form "Login form" [ref=e14]:
+      - heading "Sign In" [level=1] [ref=e15]
+      - generic [ref=e16]:
+        - text: Email
+        - textbox "Email" [ref=e17]
+      - generic [ref=e18]:
+        - text: Password
+        - textbox "Password" [ref=e19]
+      - button "Sign In" [ref=e20]
+      - generic [ref=e21]:
+        - link "Register" [ref=e22] [cursor=pointer]:
+          - /url: /register
+        - link "Forgot Password?" [ref=e23] [cursor=pointer]:
+          - /url: /forgot-password
+  - contentinfo [ref=e24]:
+    - generic [ref=e25]:
+      - link "Kinisi" [ref=e27] [cursor=pointer]:
+        - /url: /
+      - paragraph [ref=e28]: Your journey to better fitness starts here.
+      - navigation [ref=e29]:
+        - link "Privacy Policy" [ref=e30] [cursor=pointer]:
+          - /url: "#"
+        - link "Terms of Service" [ref=e31] [cursor=pointer]:
+          - /url: "#"
+        - link "Contact" [ref=e32] [cursor=pointer]:
+          - /url: "#"
+      - paragraph [ref=e33]: © 2025 Kinisi. All rights reserved.
+  - button "Open Next.js Dev Tools" [ref=e39] [cursor=pointer]:
+    - img [ref=e40]
+  - alert [ref=e43]
+```
