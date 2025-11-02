@@ -27,7 +27,8 @@ module.exports = {
     '/e2e/',
     '/__tests__/utils/',
     '/__tests__/setup/',
-    '/__tests__/mocks/'
+    '/__tests__/mocks/',
+    '/__tests__/types/'
   ],
   transformIgnorePatterns: [
     '/node_modules/(?!(got|@supabase|isows|isomorphic-fetch|ky)/)'
