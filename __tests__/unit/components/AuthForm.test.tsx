@@ -229,13 +229,19 @@ describe('AuthForm Compound Component', () => {
     it('should show loading state during sign in', async () => {
       const user = userEvent.setup();
 
-      // Create a promise that we can control
-      let resolvePromise: (value: any) => void;
-      const mockPromise = new Promise(resolve => {
-        resolvePromise = resolve;
+      // Create a controlled promise using jest.fn
+      const mockSignIn = jest.fn();
+      let resolveSignIn: (value: any) => void;
+
+      mockSignIn.mockImplementation(() => {
+        console.log('Mock implementation called');
+        return new Promise((resolve) => {
+          console.log('Promise created, waiting for resolve');
+          resolveSignIn = resolve;
+        });
       });
 
-      mockSupabase.auth.signInWithPassword.mockReturnValue(mockPromise);
+      mockSupabase.auth.signInWithPassword = mockSignIn;
 
       renderAuthForm();
 
@@ -250,16 +256,21 @@ describe('AuthForm Compound Component', () => {
       // Submit form
       await user.click(submitButton);
 
+      // Debug: Check if mock was called
+      console.log('Mock called:', mockSignIn.mock.calls);
+      console.log('Button disabled state:', submitButton.disabled);
+
       // Should show loading state (wait for it to appear)
       await waitFor(() => {
         expect(screen.getByText(/processing/i)).toBeInTheDocument();
-      });
+      }, { timeout: 1000 });
+
       expect(screen.getByTestId('submit-button')).toBeDisabled();
       expect(emailInput).toBeDisabled();
       expect(passwordInput).toBeDisabled();
 
       // Resolve the promise to complete the sign in
-      resolvePromise!({ error: null });
+      resolveSignIn!({ error: null });
 
       // Wait for completion
       await waitFor(() => {

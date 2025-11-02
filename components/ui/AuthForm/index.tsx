@@ -236,12 +236,22 @@ namespace AuthForm {
   }) => {
     return (
       <AuthFormProvider onSuccess={onSuccess} onError={onError} initialMode={initialMode}>
-        <div className={`auth-form ${className}`}>
-          <form>
-            {children}
-          </form>
-        </div>
+        <RootForm className={className}>
+          {children}
+        </RootForm>
       </AuthFormProvider>
+    );
+  };
+
+  const RootForm: React.FC<{ className: string; children: ReactNode }> = ({ className, children }) => {
+    const { actions } = useAuthForm();
+
+    return (
+      <div className={`auth-form ${className}`}>
+        <form onSubmit={actions.handleSubmit} data-testid="auth-form">
+          {children}
+        </form>
+      </div>
     );
   };
 
