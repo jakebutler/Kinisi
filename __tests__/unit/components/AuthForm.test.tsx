@@ -139,7 +139,7 @@ describe('AuthForm Compound Component', () => {
 
       // Mock supabase to return an error to test error display
       const mockSupabase = require('@/utils/supabaseClient').supabase;
-      mockSupabase.auth.signInWithPassword.mockRejectedValue(new Error('Invalid credentials'));
+      mockSupabase.auth.signInWithPassword.mockRejectedValue(new Error('Authentication failed'));
 
       renderAuthForm();
 
@@ -159,7 +159,7 @@ describe('AuthForm Compound Component', () => {
 
       await waitFor(() => {
         expect(screen.getByTestId('error-message')).toBeInTheDocument();
-        expect(screen.getByText(/invalid credentials/i)).toBeInTheDocument();
+        expect(screen.getByText(/authentication failed/i)).toBeInTheDocument();
       });
 
       // This proves that error display mechanism works
@@ -290,7 +290,7 @@ describe('AuthForm Compound Component', () => {
 
     it('should show error message on sign in failure', async () => {
       const user = userEvent.setup();
-      const errorMessage = 'Invalid credentials';
+      const errorMessage = 'Authentication failed';
       mockSupabase.auth.signInWithPassword.mockResolvedValue({ error: { message: errorMessage } });
 
       const onError = jest.fn();
