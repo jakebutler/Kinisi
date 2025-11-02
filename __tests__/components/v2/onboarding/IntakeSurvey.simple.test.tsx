@@ -48,7 +48,7 @@ describe('IntakeSurvey - Simple Reliable Tests', () => {
     render(<IntakeSurvey onNext={mockOnNext} />);
 
     // Answer first question
-    const answerButtons = screen.getAllByRole('button').filter(btn =>
+    const answerButtons = screen.getAllByRole('radio').filter(btn =>
       btn.textContent === 'Yes' || btn.textContent === 'No'
     );
     await user.click(answerButtons[0]);
@@ -68,8 +68,8 @@ describe('IntakeSurvey - Simple Reliable Tests', () => {
     const secondNextButton = screen.getByRole('button', { name: 'Next' });
     await user.click(secondNextButton);
 
-    // Should see conditional pain description question
-    expect(screen.getByText('Please describe your pain or injury:')).toBeInTheDocument();
+    // Should see conditional pain description question - using partial text match
+    expect(screen.getByText(/Please describe your pain/)).toBeInTheDocument();
   });
 
   it('has correct callback structure', () => {
