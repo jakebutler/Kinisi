@@ -2,52 +2,65 @@
   "User": {
     "id": "string (uuid)",
     "email": "string",
-    "password_hash": "string",
     "created_at": "datetime",
-    "last_login": "datetime"
+    "updated_at": "datetime"
   },
   "SurveyResponse": {
     "id": "string (uuid)",
     "user_id": "string (uuid, FK to User)",
-    "response_json": "object (structured JSON matching survey schema)",
+    "response": "object (structured JSON matching survey schema)",
     "created_at": "datetime",
     "updated_at": "datetime"
   },
-  "PersonalizedAssessment": {
+  "Assessment": {
     "id": "string (uuid)",
     "user_id": "string (uuid, FK to User)",
-    "assessment_text": "string",
-    "status": "string (e.g., draft, approved)",
+    "survey_response_id": "string (uuid, FK to SurveyResponse)",
+    "assessment": "string",
+    "approved": "boolean",
+    "revision_of": "string (uuid, FK to Assessment, nullable)",
     "created_at": "datetime",
     "updated_at": "datetime"
   },
-  "ExerciseSession": {
-    "id": "string (uuid)",
-    "program_id": "string (uuid, FK to ExerciseProgram)",
-    "week": "integer",
-    "day": "integer",
-    "title": "string",
-    "description": "string",
-    "sets_reps": "string",
-    "equipment": "string[]",
-    "video_link": "string (URL)",
-    "variation_easy": "string",
-    "variation_hard": "string"
+  "Exercise": {
+    "exercise_id": "string (primary key)",
+    "name": "string",
+    "image_url": "string (URL)",
+    "equipments": "string[]",
+    "body_parts": "string[]",
+    "exercise_type": "string",
+    "target_muscles": "string[]",
+    "secondary_muscles": "string[]",
+    "video_url": "string (URL)",
+    "keywords": "string[]",
+    "overview": "string",
+    "instructions": "string[]",
+    "exercise_tips": "string[]",
+    "variations": "string[]",
+    "related_exercise_ids": "string[]"
   },
   "ExerciseProgram": {
     "id": "string (uuid)",
     "user_id": "string (uuid, FK to User)",
-    "status": "string (e.g., draft, approved)",
+    "assessment_id": "string (uuid, FK to Assessment)",
+    "status": "string (draft, approved)",
+    "approved_at": "datetime",
+    "revision": "integer",
+    "program_json": "object (structured program data)",
+    "start_date": "date",
+    "scheduling_preferences": "object",
+    "last_scheduled_at": "datetime",
     "created_at": "datetime",
     "updated_at": "datetime"
   },
-  "ScheduledSession": {
+  "Session": {
     "id": "string (uuid)",
-    "session_id": "string (uuid, FK to ExerciseSession)",
-    "user_id": "string (uuid, FK to User)",
-    "start_time": "datetime",
-    "end_time": "datetime",
-    "calendar_link": "string (URL)"
+    "program_id": "string (uuid, FK to ExerciseProgram)",
+    "week": "integer",
+    "session_number": "integer",
+    "notes": "string",
+    "created_at": "datetime",
+    "updated_at": "datetime"
   },
   "ChatMessage": {
     "id": "string (uuid)",

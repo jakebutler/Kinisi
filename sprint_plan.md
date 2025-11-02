@@ -7,11 +7,11 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 ---
 
 ## 🛠️ Tech Stack
-- **Frontend**: Next.js 14 with TypeScript
-- **Styling**: Tailwind CSS
+- **Frontend**: Next.js 15 with TypeScript
+- **Styling**: Tailwind CSS v4
 - **Authentication**: Supabase Auth (Email/Password)
 - **Database**: Supabase PostgreSQL
-- **LLM**: OpenAI GPT-4
+- **LLM**: OpenAI GPT-3.5/4 via LangChain
 - **Deployment**: Vercel
 - **Version Control**: GitHub
 
@@ -87,7 +87,9 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 * [x] User can sign in/out successfully
 * [x] Password reset email is sent and works
 * [x] Auth state persists across page reload
-* [ ] All views render correctly on mobile
+* [x] All views render correctly on mobile
+
+**Status**: ✅ **COMPLETED**
 
 ---
 
@@ -147,7 +149,9 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 * [x] User can complete and submit survey
 * [x] User responses are stored and visible after refresh
 * [x] Survey can be edited and resubmitted
-* [ ] Survey fields match schema
+* [x] Survey fields match schema
+
+**Status**: ✅ **COMPLETED**
 
 ---
 
@@ -213,8 +217,10 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 
 * [x] Personalized Assessment is generated and shown after survey
 * [x] Chat accepts user input and revises the assessment accordingly
-* [] Final assessment is clearly marked as "Approved"
-* [ ] Edge case: empty/ambiguous feedback is handled gracefully
+* [x] Final assessment is clearly marked as "Approved"
+* [x] Edge case: empty/ambiguous feedback is handled gracefully
+
+**Status**: ✅ **COMPLETED**
 
 ---
 
@@ -287,10 +293,12 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 
 ### Testing Criteria:
 
-* [ ] Program is generated and shown after assessment approval
-* [ ] Each session includes required metadata and YouTube links
-* [ ] Users can view/edit individual sessions via chat
-* [ ] Revisions are clearly incorporated in final approved version
+* [x] Program is generated and shown after assessment approval
+* [x] Each session includes required metadata and YouTube links
+* [x] Users can view/edit individual sessions via chat
+* [x] Revisions are clearly incorporated in final approved version
+
+**Status**: ✅ **COMPLETED**
 
 ---
 
@@ -347,10 +355,12 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 ---
 
 ### Testing Criteria:
-- [ ] User can select a start date and generate schedule
-- [ ] Session times reflect survey time-of-day preferences
-- [ ] All sessions have “Add to Calendar” links that open the correct Google form
-- [ ] Users can re-generate schedule if needed
+- [x] User can select a start date and generate schedule
+- [x] Session times reflect survey time-of-day preferences
+- [x] All sessions have "Add to Calendar" links that open the correct Google form
+- [x] Users can re-generate schedule if needed
+
+**Status**: ✅ **COMPLETED**
 
 ---
 
@@ -400,10 +410,12 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 ---
 
 ### Testing Criteria:
-- [ ] Assistant chat UI is available across all views
-- [ ] Chat provides relevant guidance based on user progress
-- [ ] Feedback is correctly routed to the right LLM agent
-- [ ] Edge cases like vague input are handled with helpful fallback
+- [x] Assistant chat UI is available across all views
+- [x] Chat provides relevant guidance based on user progress
+- [x] Feedback is correctly routed to the right LLM agent
+- [x] Edge cases like vague input are handled with helpful fallback
+
+**Status**: ✅ **COMPLETED**
 
 ---
 
@@ -447,7 +459,9 @@ Each sprint corresponds directly to a milestone in the PRD. All tickets are tagg
 ---
 
 ### Testing Criteria:
-- [ ] All major screens render well on mobile
-- [ ] End-to-end user flow works without blockers
-- [ ] No broken links, missing content, or styling issues
-- [ ] Assistant is responsive and non-blocking
+- [x] All major screens render well on mobile
+- [x] End-to-end user flow works without blockers
+- [x] No broken links, missing content, or styling issues
+- [x] Assistant is responsive and non-blocking
+
+**Status**: ✅ **COMPLETED**
