@@ -45,7 +45,7 @@ describe('API: POST /api/program/[id]/schedule', () => {
 
   it('returns 200 on success and saves schedule', async () => {
     const req = { json: async () => ({ startDate: '2025-02-01', preferences: { preferred_days: ['Tue','Thu'] } }) } as any;
-    const res: any = await schedulePOST(req, { params: { id: validId } } as any);
+    const res: any = await schedulePOST(req, { params: Promise.resolve({ id: validId }) } as any);
     expect(res.status).toBe(200);
     expect(createSupabaseServerClient).toHaveBeenCalled();
     expect(getProgramById).toHaveBeenCalledWith(validId, expect.anything());
@@ -55,47 +55,47 @@ describe('API: POST /api/program/[id]/schedule', () => {
 
   it('uses program.start_date when startDate missing', async () => {
     const req = { json: async () => ({}) } as any;
-    await schedulePOST(req, { params: { id: validId } } as any);
+    await schedulePOST(req, { params: Promise.resolve({ id: validId }) } as any);
     expect(scheduleProgram).toHaveBeenCalledWith(mockProgram.program_json, mockProgram.start_date, undefined);
   });
 
   it('400 when id missing', async () => {
     const req = { json: async () => ({}) } as any;
-    const res: any = await schedulePOST(req, { params: {} as any } as any);
+    const res: any = await schedulePOST(req, { params: Promise.resolve({}) } as any);
     expect(res.status).toBe(400);
   });
 
   it('404 when id not UUID', async () => {
     const req = { json: async () => ({}) } as any;
-    const res: any = await schedulePOST(req, { params: { id: 'not-a-uuid' } } as any);
+    const res: any = await schedulePOST(req, { params: Promise.resolve({ id: 'not-a-uuid' }) } as any);
     expect(res.status).toBe(404);
   });
 
   it('401 when not authenticated', async () => {
     mockSupabase.auth.getUser.mockResolvedValueOnce({ data: { user: null } });
     const req = { json: async () => ({}) } as any;
-    const res: any = await schedulePOST(req, { params: { id: validId } } as any);
+    const res: any = await schedulePOST(req, { params: Promise.resolve({ id: validId }) } as any);
     expect(res.status).toBe(401);
   });
 
   it('404 when program not found', async () => {
     (getProgramById as unknown as jest.Mock).mockResolvedValueOnce(null);
     const req = { json: async () => ({}) } as any;
-    const res: any = await schedulePOST(req, { params: { id: validId } } as any);
+    const res: any = await schedulePOST(req, { params: Promise.resolve({ id: validId }) } as any);
     expect(res.status).toBe(404);
   });
 
   it('403 when program belongs to another user', async () => {
     (getProgramById as unknown as jest.Mock).mockResolvedValueOnce({ ...mockProgram, user_id: 'someone-else' });
     const req = { json: async () => ({}) } as any;
-    const res: any = await schedulePOST(req, { params: { id: validId } } as any);
+    const res: any = await schedulePOST(req, { params: Promise.resolve({ id: validId }) } as any);
     expect(res.status).toBe(403);
   });
 
   it('500 when saving fails', async () => {
     (updateProgramFields as unknown as jest.Mock).mockRejectedValueOnce(new Error('db error'));
     const req = { json: async () => ({}) } as any;
-    const res: any = await schedulePOST(req, { params: { id: validId } } as any);
+    const res: any = await schedulePOST(req, { params: Promise.resolve({ id: validId }) } as any);
     expect(res.status).toBe(500);
   });
 });
