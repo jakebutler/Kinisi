@@ -36,7 +36,7 @@
     "openai": "^6.6.0",
     "promptlayer": "^1.0.43",
     "react": "^19.2.0",
-    "react-dom": "^19.0.0",
+    "react-dom": "^19.2.0",
     "resend": "^6.0.1"
   },
   "devDependencies": {
