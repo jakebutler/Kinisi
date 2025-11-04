@@ -28,7 +28,7 @@
     "@langchain/core": "^0.3.78",
     "@langchain/openai": "^0.6.3",
     "@supabase/ssr": "^0.7.0",
-    "@supabase/supabase-js": "^2.49.4",
+    "@supabase/supabase-js": "^2.79.0",
     "axios": "^1.13.1",
     "langchain": "^0.3.24",
     "lucide-react": "^0.542.0",
